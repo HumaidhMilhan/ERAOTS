@@ -204,21 +204,21 @@ class LeaveRequestResponse(BaseModel):
 # ==================== PHASE C: CORRECTIONS ====================
 
 class CorrectionRequestCreate(BaseModel):
-    target_date: date
-    correction_type: str  # MISSED_SCAN, WRONG_STATUS, SYSTEM_ERROR
+    correction_date: date
+    correction_type: str  # MISSED_SCAN, WRONG_SCAN, OTHER
     reason: str
-    proposed_time: Optional[time] = None
+    proposed_time: datetime
 
 class CorrectionRequestResponse(BaseModel):
     request_id: UUID
     employee_id: UUID
     employee_name: Optional[str] = None
-    target_date: date
+    correction_date: date
     correction_type: str
     status: str
     reason: str
-    proposed_time: Optional[time] = None
-    resolved_by_id: Optional[UUID] = None
+    proposed_time: datetime
+    reviewed_by: Optional[UUID] = None
     created_at: datetime
 
     class Config:
@@ -235,5 +235,53 @@ class NotificationResponse(BaseModel):
     is_read: bool
     created_at: datetime
 
+    class Config:
+        from_attributes = True
+
+# ==================== PHASE D: EMERGENCY ====================
+
+class EmergencyEventCreate(BaseModel):
+    emergency_type: str  # FIRE, DRILL, SECURITY_THREAT, OTHER
+    notes: Optional[str] = None
+
+class EmergencyHeadcountResponse(BaseModel):
+    id: UUID
+    employee_id: UUID
+    employee_name: Optional[str] = None
+    status_at_event: str
+    accounted_for: bool
+    last_known_door: Optional[str] = None
+    accounted_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class EmergencyEventResponse(BaseModel):
+    emergency_id: UUID
+    activated_by: UUID
+    activator_name: Optional[str] = None
+    activation_time: datetime
+    deactivation_time: Optional[datetime] = None
+    emergency_type: str
+    headcount_at_activation: int
+    notes: Optional[str] = None
+    status: str
+    headcount_entries: List[EmergencyHeadcountResponse] = []
+
+    class Config:
+        from_attributes = True
+
+# ==================== PHASE D: SYSTEM SETTINGS ====================
+
+class PolicyUpdate(BaseModel):
+    value: dict
+
+class PolicyResponse(BaseModel):
+    policy_id: UUID
+    name: str
+    policy_type: str
+    value: dict
+    is_active: bool
+    
     class Config:
         from_attributes = True

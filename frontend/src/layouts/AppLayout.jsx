@@ -15,6 +15,7 @@ const navItems = [
     { to: '/schedules', label: 'Schedules', icon: '📅' },
   ]},
   { section: 'Operations', items: [
+    { to: '/corrections', label: 'Corrections', icon: '✍️' },
     { to: '/scanners', label: 'Scanners', icon: '🔧' },
     { to: '/emergency', label: 'Emergency', icon: '🚨' },
     { to: '/analytics', label: 'Analytics', icon: '📈' },
@@ -94,15 +95,24 @@ export default function AppLayout() {
               {user?.role?.replace('_', ' ') || 'Employee'}
             </div>
           </div>
+
+          <button
+            title="Notifications"
+            onClick={() => window.location.href = '/notifications'}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: '1.1rem', padding: '0.25rem', position: 'relative'
+            }}
+          >
+            🔔
+          </button>
+
           <button
             onClick={handleLogout}
             title="Logout"
             style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '1.1rem',
-              padding: '0.25rem',
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: '1.1rem', padding: '0.25rem',
             }}
           >
             🚪

@@ -78,8 +78,13 @@ async def process_daily_attendance(db: AsyncSession, target_date: date, employee
         if last_exit:
             total_time_in_building = int((last_exit - first_entry).total_seconds() / 60)
 
-        office_start_hour = 9 # Configurable later via Policies (FR15)
-        expected_arrival = datetime.combine(target_date, datetime.min.time().replace(hour=office_start_hour), tzinfo=timezone.utc)
+        # Extract configurations from DB Policies
+        from app.models.policies import Policy
+        start_time_policy = (await db.execute(select(Policy).where(and_(Policy.policy_type == "START_TIME", Policy.is_active == True)))).scalars().first()
+        office_start_hour = int(start_time_policy.value.get("hour", 9)) if start_time_policy else 9
+        office_start_min = int(start_time_policy.value.get("minute", 0)) if start_time_policy else 0
+        
+        expected_arrival = datetime.combine(target_date, datetime.min.time().replace(hour=office_start_hour, minute=office_start_min), tzinfo=timezone.utc)
         
         is_late = False
         late_duration_min = 0
@@ -89,7 +94,10 @@ async def process_daily_attendance(db: AsyncSession, target_date: date, employee
             is_late = True
             late_duration_min = int((cmp_first_entry - expected_arrival).total_seconds() / 60)
             
-        overtime_min = max(0, total_active_minutes - (8 * 60)) # Assumes 8 hr workday constraint
+        ot_policy = (await db.execute(select(Policy).where(and_(Policy.policy_type == "OVERTIME_THRESHOLD", Policy.is_active == True)))).scalars().first()
+        threshold_min = int(ot_policy.value.get("threshold_min", 480)) if ot_policy else 480
+
+        overtime_min = max(0, total_active_minutes - threshold_min)
 
         # 4. Upsert Attendance Record
         record_stmt = select(AttendanceRecord).where(

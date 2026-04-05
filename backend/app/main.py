@@ -7,9 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 
-from app.core.config import settings
+from app.core.config import settings as app_settings
 from app.core.database import create_tables
-from app.api import auth, events, employees, attendance
+from app.api import auth, events, employees, attendance, schedules, corrections, notifications, emergency, scanners, settings
 
 # Configure logging
 logging.basicConfig(
@@ -25,9 +25,9 @@ async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
     # Startup
     logger.info("=" * 60)
-    logger.info(f"  ERAOTS v{settings.APP_VERSION} starting...")
-    logger.info(f"  Debug mode: {settings.DEBUG}")
-    logger.info(f"  Database: {settings.DATABASE_URL.split('@')[-1] if '@' in settings.DATABASE_URL else 'configured'}")
+    logger.info(f"  ERAOTS v{app_settings.APP_VERSION} starting...")
+    logger.info(f"  Debug mode: {app_settings.DEBUG}")
+    logger.info(f"  Database: {app_settings.DATABASE_URL.split('@')[-1] if '@' in app_settings.DATABASE_URL else 'configured'}")
     logger.info("=" * 60)
     
     # Create database tables
@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="ERAOTS API",
     description="Enterprise Real-Time Attendance & Occupancy Tracking System",
-    version=settings.APP_VERSION,
+    version=app_settings.APP_VERSION,
     docs_url="/docs",      # Swagger UI
     redoc_url="/redoc",     # ReDoc
     lifespan=lifespan,
@@ -62,7 +62,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=app_settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -73,6 +73,12 @@ app.include_router(auth.router)
 app.include_router(events.router)
 app.include_router(employees.router)
 app.include_router(attendance.router)
+app.include_router(schedules.router)
+app.include_router(corrections.router)
+app.include_router(notifications.router)
+app.include_router(emergency.router)
+app.include_router(scanners.router)
+app.include_router(settings.router)
 
 
 @app.get("/", tags=["Health"])

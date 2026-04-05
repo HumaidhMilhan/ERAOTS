@@ -74,6 +74,47 @@ export const attendanceAPI = {
   list: (params) => api.get('/api/attendance/', { params }),
 };
 
+// ==================== SCHEDULES & LEAVE ====================
+export const leaveAPI = {
+  getTypes: () => api.get('/api/schedules/leave-types'),
+  submitRequest: (data) => api.post('/api/schedules/leave-requests', data),
+  listRequests: (status) => api.get('/api/schedules/leave-requests', { params: { status } }),
+  updateStatus: (id, status_val, comment) => api.put(`/api/schedules/leave-requests/${id}/status`, null, { params: { status: status_val, comment } })
+};
+
+// ==================== CORRECTIONS ====================
+export const correctionsAPI = {
+  submit: (data) => api.post('/api/corrections/', data),
+  list: (status) => api.get('/api/corrections/', { params: { status } }),
+  updateStatus: (id, status_val, comment) => api.put(`/api/corrections/${id}/status`, null, { params: { status: status_val, comment } })
+};
+
+// ==================== NOTIFICATIONS ====================
+export const notificationsAPI = {
+  list: (limit = 10) => api.get('/api/notifications/', { params: { limit } }),
+  markRead: (id) => api.put(`/api/notifications/${id}/read`)
+};
+
+// ==================== EMERGENCY ====================
+export const emergencyAPI = {
+  getActive: () => api.get('/api/emergency/active'),
+  trigger: (data) => api.post('/api/emergency/trigger', data),
+  resolve: (id) => api.put(`/api/emergency/${id}/resolve`),
+  markAccounted: (headcountId) => api.put(`/api/emergency/headcount/${headcountId}/account`)
+};
+
+// ==================== HARDWARE SCANNERS ====================
+export const hardwareAPI = {
+  list: () => api.get('/api/scanners/'),
+  register: (data) => api.post('/api/scanners/', data)
+};
+
+// ==================== SYSTEM SETTINGS ====================
+export const settingsAPI = {
+  getPolicies: () => api.get('/api/settings/policies'),
+  updatePolicy: (id, value) => api.put(`/api/settings/policies/${id}`, { value })
+};
+
 // ==================== WEBSOCKET ====================
 export const createDashboardSocket = (onMessage) => {
   const wsUrl = API_BASE.replace('http', 'ws') + '/api/events/ws/dashboard';
