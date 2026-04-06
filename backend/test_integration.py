@@ -3,12 +3,21 @@ import unittest
 import time
 import uuid
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://127.0.0.1:8000"
 
 class TestERAOTSBackend(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print("\n--- Starting ERAOTS Backend Integration Tests ---")
+        
+        # Wait for server to be up
+        for _ in range(5):
+            try:
+                requests.get(f"{BASE_URL}/docs")
+                break
+            except requests.exceptions.ConnectionError:
+                time.sleep(1)
+        
         # 1. Login to get token
         resp = requests.post(
             f"{BASE_URL}/api/auth/login",
@@ -17,11 +26,11 @@ class TestERAOTSBackend(unittest.TestCase):
         if resp.status_code == 200:
             cls.token = resp.json()["access_token"]
             cls.headers = {"Authorization": f"Bearer {cls.token}"}
-            print("[✓] Auth: Successfully obtained Super Admin token for alice.")
+            print("[OK] Auth: Successfully obtained Super Admin token.")
         else:
             cls.token = None
             cls.headers = {}
-            print("[x] Auth: Failed to login. Is test_seed.py run and server active?", resp.text)
+            print("[FAIL] Auth: Failed to login. Is test_seed.py run and server active?", resp.text)
             
         cls.department_id = None
         cls.employee_id = None
@@ -32,26 +41,23 @@ class TestERAOTSBackend(unittest.TestCase):
 
     def test_01_departments(self):
         """Test creating and listing departments."""
-        # Create
         random_str = str(uuid.uuid4())[:8]
-        res = requests.post(f"{BASE_URL}/api/departments/", json={
+        res = requests.post(f"{BASE_URL}/api/departments", json={
             "name": f"Integration Test Dept {random_str}",
             "description": "Created by automated tests"
         }, headers=self.headers)
         self.assertEqual(res.status_code, 200, "Failed to create department: " + res.text)
         self.__class__.department_id = res.json()["department_id"]
         
-        # List
-        res_list = requests.get(f"{BASE_URL}/api/departments/", headers=self.headers)
+        res_list = requests.get(f"{BASE_URL}/api/departments", headers=self.headers)
         self.assertEqual(res_list.status_code, 200, "Failed to list departments")
         self.assertTrue(len(res_list.json()) > 0)
-        print("[✓] Departments API verified.")
+        print("[OK] Departments API verified.")
 
     def test_02_employees(self):
         """Test creating and listing employees."""
-        # Create
         random_str = str(uuid.uuid4())[:8]
-        res = requests.post(f"{BASE_URL}/api/employees/", json={
+        res = requests.post(f"{BASE_URL}/api/employees", json={
             "first_name": "Test",
             "last_name": f"Worker {random_str}",
             "email": f"testworker{random_str}@eraots.com",
@@ -64,14 +70,13 @@ class TestERAOTSBackend(unittest.TestCase):
         if res.status_code == 200:
             self.__class__.employee_id = res.json()["employee_id"]
         
-        # List
-        res_list = requests.get(f"{BASE_URL}/api/employees/", headers=self.headers)
+        res_list = requests.get(f"{BASE_URL}/api/employees", headers=self.headers)
         self.assertEqual(res_list.status_code, 200, "Failed to list employees")
-        print("[✓] Employees API verified.")
+        print("[OK] Employees API verified.")
 
     def test_03_scanners(self):
         """Test registering hardware scanners."""
-        res = requests.post(f"{BASE_URL}/api/scanners/", json={
+        res = requests.post(f"{BASE_URL}/api/scanners", json={
             "name": "Test Node Gateway",
             "door_name": "Testing Lobby",
             "location_description": "Lab",
@@ -80,9 +85,9 @@ class TestERAOTSBackend(unittest.TestCase):
         self.assertEqual(res.status_code, 200, "Failed to register scanner: " + res.text)
         self.__class__.scanner_id = res.json()["scanner_id"]
         
-        res_list = requests.get(f"{BASE_URL}/api/scanners/", headers=self.headers)
+        res_list = requests.get(f"{BASE_URL}/api/scanners", headers=self.headers)
         self.assertEqual(res_list.status_code, 200, "Failed to list scanners")
-        print("[✓] Scanners (Hardware) API verified.")
+        print("[OK] Scanners (Hardware) API verified.")
 
     def test_04_events_and_occupancy(self):
         """Test pushing a scan event and checking occupancy."""
@@ -91,22 +96,22 @@ class TestERAOTSBackend(unittest.TestCase):
             
         res = requests.post(f"{BASE_URL}/api/events/scan", json={
             "scanner_id": self.scanner_id,
-            "fingerprint_id": "TEST_FING_123" # Will be "UNKNOWN_FINGERPRINT" but event is valid
+            "fingerprint_id": "TEST_FING_123" 
         })
-        self.assertIn(res.status_code, [200, 404]) # It evaluates validation
+        self.assertIn(res.status_code, [200, 404]) 
         
         res_occ = requests.get(f"{BASE_URL}/api/events/dashboard", headers=self.headers)
         self.assertEqual(res_occ.status_code, 200, "Failed to fetch dashboard")
-        print("[✓] Events & Occupancy API verified.")
+        print("[OK] Events & Occupancy API verified.")
 
     def test_05_attendance(self):
         """Test attendance processing."""
         res = requests.post(f"{BASE_URL}/api/attendance/process", params={"target_date": "2026-04-05"}, headers=self.headers)
         self.assertEqual(res.status_code, 200, "Failed to process attendance: " + res.text)
         
-        res_get = requests.get(f"{BASE_URL}/api/attendance/", params={"start_date": "2026-04-01"}, headers=self.headers)
+        res_get = requests.get(f"{BASE_URL}/api/attendance", params={"start_date": "2026-04-01"}, headers=self.headers)
         self.assertEqual(res_get.status_code, 200, "Failed to fetch attendance list")
-        print("[✓] Attendance Engine API verified.")
+        print("[OK] Attendance Engine API verified.")
 
     def test_06_settings(self):
         """Test getting and updating policies."""
@@ -120,7 +125,7 @@ class TestERAOTSBackend(unittest.TestCase):
                 "value": policies[0]["value"]
             }, headers=self.headers)
             self.assertEqual(res_put.status_code, 200)
-        print("[✓] Policy Engine API verified.")
+        print("[OK] Policy Engine API verified.")
 
     def test_07_schedules_and_leave(self):
         """Test leave creation and listing."""
@@ -143,11 +148,11 @@ class TestERAOTSBackend(unittest.TestCase):
         if self.leave_id:
             res_upd = requests.put(f"{BASE_URL}/api/schedules/leave-requests/{self.leave_id}/status", params={"status": "APPROVED", "comment": "Test approval"}, headers=self.headers)
             self.assertEqual(res_upd.status_code, 200, "Failed to approve leave: " + res_upd.text)
-        print("[✓] Schedules API verified.")
+        print("[OK] Schedules API verified.")
 
     def test_08_corrections(self):
         """Test attendance correction loop."""
-        res = requests.post(f"{BASE_URL}/api/corrections/", json={
+        res = requests.post(f"{BASE_URL}/api/corrections", json={
             "correction_date": "2026-04-05",
             "correction_type": "MISSED_SCAN",
             "reason": "Test forgot badge",
@@ -156,13 +161,13 @@ class TestERAOTSBackend(unittest.TestCase):
         self.assertEqual(res.status_code, 200, "Failed to submit correction: " + res.text)
         self.__class__.correction_id = res.json()["request_id"]
         
-        res_list = requests.get(f"{BASE_URL}/api/corrections/", headers=self.headers)
+        res_list = requests.get(f"{BASE_URL}/api/corrections", headers=self.headers)
         self.assertEqual(res_list.status_code, 200)
         
         if self.correction_id:
             res_upd = requests.put(f"{BASE_URL}/api/corrections/{self.correction_id}/status", params={"status": "APPROVED", "comment": "Okay"}, headers=self.headers)
             self.assertEqual(res_upd.status_code, 200, "Failed to update correction status")
-        print("[✓] Corrections API verified.")
+        print("[OK] Corrections API verified.")
 
     def test_09_emergency(self):
         """Test emergency engine."""
@@ -187,11 +192,11 @@ class TestERAOTSBackend(unittest.TestCase):
             
             res_res = requests.put(f"{BASE_URL}/api/emergency/{ev_id}/resolve", headers=self.headers)
             self.assertEqual(res_res.status_code, 200)
-        print("[✓] Emergency Protocol API verified.")
+        print("[OK] Emergency Protocol API verified.")
 
     def test_10_notifications(self):
         """Test notifications stream."""
-        res = requests.get(f"{BASE_URL}/api/notifications/", headers=self.headers)
+        res = requests.get(f"{BASE_URL}/api/notifications", headers=self.headers)
         self.assertEqual(res.status_code, 200, "Failed to fetch notifications: " + res.text)
         notifs = res.json()
         
@@ -199,7 +204,7 @@ class TestERAOTSBackend(unittest.TestCase):
             not_id = notifs[0]["notification_id"]
             res_upd = requests.put(f"{BASE_URL}/api/notifications/{not_id}/read", headers=self.headers)
             self.assertEqual(res_upd.status_code, 200)
-        print("[✓] Notifications API verified.")
+        print("[OK] Notifications API verified.")
 
 if __name__ == "__main__":
     unittest.main()

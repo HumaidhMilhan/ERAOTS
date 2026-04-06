@@ -23,7 +23,7 @@ async def list_notifications(
     # We will use user_id = current_user.user_id since the Notification targets the UserAccount.
     stmt = (
         select(Notification)
-        .where(Notification.user_id == current_user.user_id)
+        .where(Notification.recipient_id == current_user.employee_id)
         .order_by(Notification.created_at.desc())
         .limit(limit)
     )
@@ -32,10 +32,10 @@ async def list_notifications(
     return [
         NotificationResponse(
             notification_id=n.notification_id,
-            user_id=n.user_id,
+            user_id=n.recipient_id,
             title=n.title,
             message=n.message,
-            notification_type=n.notification_type,
+            notification_type=n.type,
             is_read=n.is_read,
             created_at=n.created_at
         ) for n in results
@@ -52,7 +52,7 @@ async def mark_as_read(
     result = await db.execute(
         select(Notification)
         .where(Notification.notification_id == notification_id)
-        .where(Notification.user_id == current_user.user_id)
+        .where(Notification.recipient_id == current_user.employee_id)
     )
     notif = result.scalar_one_or_none()
     

@@ -38,8 +38,9 @@ async def get_current_user(
     if user_id is None:
         raise credentials_exception
 
+    from sqlalchemy.orm import joinedload
     result = await db.execute(
-        select(UserAccount).where(UserAccount.user_id == user_id)
+        select(UserAccount).options(joinedload(UserAccount.role)).where(UserAccount.user_id == user_id)
     )
     user = result.scalar_one_or_none()
 
