@@ -1,10 +1,19 @@
 /**
  * ERAOTS API Service.
  * Centralized HTTP client for all backend API calls.
+ * 
+ * Configuration:
+ *   - API_BASE is set via VITE_API_URL environment variable
+ *   - Default fallback: http://localhost:8000
+ *   - Set in .env file: VITE_API_URL=http://your-api-server:8000
  */
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:8000';
+// Use Vite environment variable, fallback to localhost for development
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+// Export for use in other modules (e.g., WebSocket URL generation)
+export const getApiBaseUrl = () => API_BASE;
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -43,6 +52,9 @@ export const authAPI = {
     });
   },
   getMe: () => api.get('/api/auth/me'),
+  updateProfile: (data) => api.put('/api/auth/me/profile', data),
+  changePassword: (currentPassword, newPassword) => 
+    api.put('/api/auth/me/password', { current_password: currentPassword, new_password: newPassword }),
 };
 
 // ==================== EMPLOYEES ====================
@@ -66,6 +78,12 @@ export const eventsAPI = {
   recent: (limit = 50) => api.get('/api/events/recent', { params: { limit } }),
   occupancy: () => api.get('/api/events/occupancy'),
   employeeStates: (status) => api.get('/api/events/occupancy/employees', { params: { status_filter: status } }),
+  // Status override - manual toggle between ACTIVE/IN_MEETING
+  statusOverride: (newStatus) => api.put('/api/events/status-override', null, { params: { new_status: newStatus } }),
+  // Pending transitions (meeting confirmations)
+  getPendingTransitions: () => api.get('/api/events/pending-transitions'),
+  confirmTransition: (transitionId) => api.put(`/api/events/pending-transitions/${transitionId}/action`, null, { params: { action: 'CONFIRM' } }),
+  cancelTransition: (transitionId) => api.put(`/api/events/pending-transitions/${transitionId}/action`, null, { params: { action: 'CANCEL' } }),
 };
 
 // ==================== ATTENDANCE ====================
@@ -75,10 +93,18 @@ export const attendanceAPI = {
 };
 
 // ==================== SCHEDULES & LEAVE ====================
+export const scheduleAPI = {
+  list: (params) => api.get('/api/schedules/', { params }),
+  mySchedule: (params) => api.get('/api/schedules/my-schedule', { params }),
+  create: (data) => api.post('/api/schedules/', data),
+  update: (id, data) => api.put(`/api/schedules/${id}`, data),
+};
+
 export const leaveAPI = {
   getTypes: () => api.get('/api/schedules/leave-types'),
   submitRequest: (data) => api.post('/api/schedules/leave-requests', data),
   listRequests: (status) => api.get('/api/schedules/leave-requests', { params: { status } }),
+  myRequests: () => api.get('/api/schedules/leave-requests/my'),
   updateStatus: (id, status_val, comment) => api.put(`/api/schedules/leave-requests/${id}/status`, null, { params: { status: status_val, comment } })
 };
 
@@ -98,6 +124,7 @@ export const notificationsAPI = {
 // ==================== EMERGENCY ====================
 export const emergencyAPI = {
   getActive: () => api.get('/api/emergency/active'),
+  getHistory: () => api.get('/api/emergency/'),
   trigger: (data) => api.post('/api/emergency/trigger', data),
   resolve: (id) => api.put(`/api/emergency/${id}/resolve`),
   markAccounted: (headcountId) => api.put(`/api/emergency/headcount/${headcountId}/account`)
@@ -113,6 +140,68 @@ export const hardwareAPI = {
 export const settingsAPI = {
   getPolicies: () => api.get('/api/settings/policies'),
   updatePolicy: (id, value) => api.put(`/api/settings/policies/${id}`, { value })
+};
+
+// ==================== REPORTS & EXPORTS ====================
+export const reportsAPI = {
+  /**
+   * Export attendance report.
+   * @param {string} startDate - Start date (YYYY-MM-DD)
+   * @param {string} endDate - End date (YYYY-MM-DD)
+   * @param {string} format - Export format: csv, excel, pdf
+   * @param {string} departmentId - Optional department filter
+   */
+  exportAttendance: (startDate, endDate, format = 'excel', departmentId = null) => {
+    const params = { start_date: startDate, end_date: endDate, format };
+    if (departmentId) params.department_id = departmentId;
+    return api.get('/api/reports/attendance', { params, responseType: 'blob' });
+  },
+  
+  /**
+   * Export employee directory.
+   */
+  exportEmployees: (format = 'excel', departmentId = null, status = null) => {
+    const params = { format };
+    if (departmentId) params.department_id = departmentId;
+    if (status) params.status = status;
+    return api.get('/api/reports/employees', { params, responseType: 'blob' });
+  },
+  
+  /**
+   * Export late arrivals report.
+   */
+  exportLateArrivals: (startDate, endDate, format = 'excel') => {
+    return api.get('/api/reports/late-arrivals', {
+      params: { start_date: startDate, end_date: endDate, format },
+      responseType: 'blob'
+    });
+  },
+  
+  /**
+   * Export department summary.
+   */
+  exportDepartmentSummary: (startDate, endDate, format = 'excel') => {
+    return api.get('/api/reports/department-summary', {
+      params: { start_date: startDate, end_date: endDate, format },
+      responseType: 'blob'
+    });
+  }
+};
+
+/**
+ * Helper function to download a blob response as a file.
+ * @param {Blob} blob - The blob data
+ * @param {string} filename - Suggested filename
+ */
+export const downloadBlob = (blob, filename) => {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 };
 
 // ==================== WEBSOCKET ====================

@@ -1,0 +1,282 @@
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline": "#946e68",
+                    "secondary-container": "#e2dfde",
+                    "primary": "#b70100",
+                    "inverse-on-surface": "#f0f1f2",
+                    "surface-bright": "#f8f9fa",
+                    "inverse-surface": "#2e3132",
+                    "secondary-fixed-dim": "#c8c6c5",
+                    "primary-fixed-dim": "#ffb4a8",
+                    "inverse-primary": "#ffb4a8",
+                    "on-primary-fixed-variant": "#930100",
+                    "surface": "#f8f9fa",
+                    "tertiary-fixed": "#e4e2e1",
+                    "on-tertiary-container": "#faf8f7",
+                    "tertiary-container": "#727272",
+                    "surface-container": "#edeeef",
+                    "on-secondary-container": "#636262",
+                    "on-secondary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#c8c6c6",
+                    "primary-fixed": "#ffdad4",
+                    "surface-container-low": "#f3f4f5",
+                    "surface-variant": "#e1e3e4",
+                    "on-surface": "#191c1d",
+                    "surface-tint": "#c00000",
+                    "outline-variant": "#e9bcb5",
+                    "surface-container-highest": "#e1e3e4",
+                    "secondary-fixed": "#e5e2e1",
+                    "surface-container-high": "#e7e8e9",
+                    "on-secondary-fixed-variant": "#474746",
+                    "background": "#f8f9fa",
+                    "on-tertiary-fixed": "#1b1c1c",
+                    "on-secondary-fixed": "#1c1b1b",
+                    "on-background": "#191c1d",
+                    "on-primary-fixed": "#410000",
+                    "on-surface-variant": "#5f3f3a",
+                    "on-error": "#ffffff",
+                    "surface-dim": "#d9dadb",
+                    "secondary": "#5f5e5e",
+                    "on-tertiary-fixed-variant": "#474747",
+                    "on-primary-container": "#fff7f5",
+                    "on-tertiary": "#ffffff",
+                    "primary-container": "#e60000",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "tertiary": "#5a5959",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+        .pulse-dot {
+            box-shadow: 0 0 0 0 rgba(183, 1, 0, 0.4);
+        }
+        .pulse-dot::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: inherit;
+            opacity: 0.6;
+            transform: scale(1);
+        }
+        .presence-line {
+            stroke-dasharray: 4;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface overflow-hidden">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-6 py-4 sticky top-0 z-40 bg-white/70 backdrop-blur-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.06)]">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tighter text-black uppercase font-headline">Presence Pulse</span>
+<nav class="hidden md:flex gap-6 items-center">
+<a class="text-zinc-500 hover:text-black transition-colors font-headline text-sm font-medium tracking-tight" href="#">Dashboard</a>
+<a class="text-red-600 font-bold font-headline text-sm tracking-tight" href="#">Live Map</a>
+<a class="text-zinc-500 hover:text-black transition-colors font-headline text-sm font-medium tracking-tight" href="#">Employee List</a>
+<a class="text-zinc-500 hover:text-black transition-colors font-headline text-sm font-medium tracking-tight" href="#">Analytics</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100/50">
+<span class="material-symbols-outlined text-zinc-500 text-[20px]">notifications</span>
+<span class="material-symbols-outlined text-zinc-500 text-[20px]">settings</span>
+</div>
+<img alt="User profile" class="w-8 h-8 rounded-full object-cover" data-alt="Close-up professional portrait of a woman with short hair and a neutral expression against a soft studio background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOglLPg5zSIPm8tX_aXn0oeP9I9cb_b_g72HtyLuHvjRqGz5dZj46kpaekGN13Gm-ADFg8OSHPjMDwVxPHPjUNIejWnNhqyjWxnFBCWSPPN88_CKwBMg-iPZb0CLBA_Jq6jHBR0l1qn4uUfCfefRfvNL8vXJJrGywcpjlL-nincPYUrN4DqzYMnFFEUXLcszOajnIhmHI3b4BPfOeJ27ceg_2qV9jWg47H4Tswk2l2o3k2KPetIDHdksJpLxcCWIlaB6lDz99-ld3C"/>
+</div>
+</header>
+<main class="flex h-[calc(100vh-72px)] relative">
+<!-- SideNavBar / Department Overlay -->
+<aside class="flex flex-col h-full py-8 px-4 bg-white/80 backdrop-blur-2xl w-64 fixed left-0 top-[72px] z-30 border-r border-zinc-100/10">
+<div class="mb-8">
+<h2 class="font-headline text-2xl font-extrabold tracking-tight mb-1 text-on-surface">HQ Presence</h2>
+<div class="flex items-center gap-2 text-secondary text-xs font-semibold tracking-wide uppercase">
+<span class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(183,1,0,0.5)]"></span>
+                    Active: 94% Capacity
+                </div>
+</div>
+<div class="space-y-6 overflow-y-auto">
+<section>
+<h3 class="text-[10px] font-bold text-secondary tracking-widest uppercase mb-4 px-2">Departments</h3>
+<div class="space-y-1">
+<div class="group flex items-center justify-between p-3 rounded-xl bg-red-50/50 border-r-2 border-red-600 transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-weight="fill">engineering</span>
+<span class="font-headline text-sm font-semibold tracking-wide text-primary">Engineering</span>
+</div>
+<span class="text-xs font-bold text-primary">98%</span>
+</div>
+<div class="group flex items-center justify-between p-3 rounded-xl hover:bg-zinc-50 transition-all cursor-pointer">
+<div class="flex items-center gap-3 text-zinc-400 group-hover:text-zinc-900">
+<span class="material-symbols-outlined">brush</span>
+<span class="font-headline text-sm font-semibold tracking-wide">Design</span>
+</div>
+<span class="text-xs font-bold text-secondary">82%</span>
+</div>
+<div class="group flex items-center justify-between p-3 rounded-xl hover:bg-zinc-50 transition-all cursor-pointer">
+<div class="flex items-center gap-3 text-zinc-400 group-hover:text-zinc-900">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-headline text-sm font-semibold tracking-wide">Finance</span>
+</div>
+<span class="text-xs font-bold text-secondary">100%</span>
+</div>
+<div class="group flex items-center justify-between p-3 rounded-xl hover:bg-zinc-50 transition-all cursor-pointer">
+<div class="flex items-center gap-3 text-zinc-400 group-hover:text-zinc-900">
+<span class="material-symbols-outlined">campaign</span>
+<span class="font-headline text-sm font-semibold tracking-wide">Marketing</span>
+</div>
+<span class="text-xs font-bold text-secondary">45%</span>
+</div>
+</div>
+</section>
+</div>
+<div class="mt-auto pt-8 border-t border-zinc-100/50">
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary py-3 px-4 rounded-full font-headline text-sm font-bold tracking-tight shadow-lg transition-all active:scale-95 mb-4">
+                    Add Member
+                </button>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-3 p-2 text-zinc-400 hover:text-zinc-900 transition-all cursor-pointer">
+<span class="material-symbols-outlined text-[20px]">help</span>
+<span class="font-headline text-sm font-semibold tracking-wide">Help</span>
+</div>
+<div class="flex items-center gap-3 p-2 text-zinc-400 hover:text-zinc-900 transition-all cursor-pointer">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span class="font-headline text-sm font-semibold tracking-wide">Logout</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Floorplan Area -->
+<div class="flex-1 ml-64 p-8 relative overflow-hidden bg-zinc-100/30">
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.8),transparent)] pointer-events-none"></div>
+<!-- Floorplan SVG Visualization -->
+<div class="relative w-full h-full flex items-center justify-center">
+<svg class="w-full h-full max-w-5xl opacity-80" viewbox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+<!-- Architectural Lines -->
+<g fill="none" stroke="#e1e3e4" stroke-width="2">
+<!-- Outer Shell -->
+<path d="M50,50 L950,50 L950,550 L50,550 Z" stroke="#946e68" stroke-dasharray="4 4" stroke-width="1"></path>
+<!-- Internal Divisions -->
+<rect height="200" rx="4" width="300" x="50" y="50"></rect> <!-- Executive Suite -->
+<rect height="300" rx="4" width="300" x="50" y="250"></rect> <!-- Engineering Bay -->
+<rect height="150" rx="4" width="300" x="350" y="50"></rect> <!-- Conference Row -->
+<rect height="250" rx="4" width="300" x="650" y="50"></rect> <!-- Design Lab -->
+<rect height="350" rx="4" width="600" x="350" y="200"></rect> <!-- Open Space -->
+<!-- Columns -->
+<circle cx="400" cy="300" fill="#f3f4f5" r="8"></circle>
+<circle cx="600" cy="300" fill="#f3f4f5" r="8"></circle>
+<circle cx="800" cy="300" fill="#f3f4f5" r="8"></circle>
+<circle cx="400" cy="450" fill="#f3f4f5" r="8"></circle>
+<circle cx="600" cy="450" fill="#f3f4f5" r="8"></circle>
+<circle cx="800" cy="450" fill="#f3f4f5" r="8"></circle>
+</g>
+<!-- Labels -->
+<g fill="#5f5e5e" font-family="Manrope" font-size="12" font-weight="600" style="text-transform: uppercase; letter-spacing: 0.1em;">
+<text x="70" y="80">Executive</text>
+<text x="70" y="280">Engineering</text>
+<text x="370" y="80">Nexus Hub</text>
+<text x="670" y="80">Design Lab</text>
+<text x="370" y="230">Common Area</text>
+</g>
+</svg>
+<!-- Absolute Positioned Presence Dots (Floating on Top) -->
+<!-- Engineering Dots -->
+<div class="absolute left-[15%] top-[50%] w-3 h-3 bg-primary rounded-full pulse-dot animate-pulse"></div>
+<div class="absolute left-[18%] top-[55%] w-3 h-3 bg-primary rounded-full pulse-dot"></div>
+<div class="absolute left-[12%] top-[60%] w-3 h-3 bg-primary rounded-full pulse-dot animate-pulse"></div>
+<div class="absolute left-[20%] top-[45%] w-3 h-3 bg-primary rounded-full pulse-dot"></div>
+<div class="absolute left-[25%] top-[70%] w-3 h-3 bg-primary rounded-full pulse-dot animate-pulse"></div>
+<!-- Design Lab Dots -->
+<div class="absolute right-[15%] top-[20%] w-3 h-3 bg-primary rounded-full pulse-dot"></div>
+<div class="absolute right-[10%] top-[25%] w-3 h-3 bg-primary rounded-full pulse-dot animate-pulse"></div>
+<div class="absolute right-[18%] top-[30%] w-3 h-3 bg-on-surface rounded-full opacity-40"></div>
+<!-- Nexus Hub Dots -->
+<div class="absolute left-[50%] top-[15%] w-3 h-3 bg-primary rounded-full pulse-dot"></div>
+<div class="absolute left-[45%] top-[15%] w-3 h-3 bg-primary rounded-full pulse-dot animate-pulse"></div>
+<!-- Common Area Dots -->
+<div class="absolute left-[60%] top-[60%] w-3 h-3 bg-primary rounded-full pulse-dot animate-pulse"></div>
+<div class="absolute left-[65%] top-[65%] w-3 h-3 bg-on-surface rounded-full opacity-20"></div>
+<div class="absolute left-[75%] top-[55%] w-3 h-3 bg-primary rounded-full pulse-dot"></div>
+<div class="absolute left-[80%] top-[75%] w-3 h-3 bg-primary rounded-full pulse-dot animate-pulse"></div>
+</div>
+<!-- Bento Stats Overlays -->
+<div class="absolute bottom-10 right-10 grid grid-cols-2 gap-4 w-96">
+<div class="glass-panel p-5 rounded-full border border-white/20 shadow-xl">
+<div class="text-[10px] font-bold text-secondary tracking-widest uppercase mb-1">Peak Hour</div>
+<div class="text-xl font-headline font-extrabold text-on-surface">11:30 AM</div>
+</div>
+<div class="glass-panel p-5 rounded-full border border-white/20 shadow-xl">
+<div class="text-[10px] font-bold text-secondary tracking-widest uppercase mb-1">Total Active</div>
+<div class="text-xl font-headline font-extrabold text-primary">142</div>
+</div>
+<div class="col-span-2 glass-panel p-6 rounded-full border border-white/20 shadow-xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">trending_up</span>
+</div>
+<div>
+<div class="text-[10px] font-bold text-secondary tracking-widest uppercase">Global Average</div>
+<div class="text-lg font-headline font-extrabold text-on-surface">Higher than yesterday</div>
+</div>
+</div>
+<div class="text-2xl font-headline font-extrabold text-primary">+12%</div>
+</div>
+</div>
+<!-- Floating Legend -->
+<div class="absolute top-10 right-10 glass-panel px-6 py-4 rounded-full border border-white/20 shadow-xl flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary pulse-dot"></span>
+<span class="text-[11px] font-bold tracking-wide text-secondary uppercase">On-Site</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-on-surface opacity-40"></span>
+<span class="text-[11px] font-bold tracking-wide text-secondary uppercase">Hybrid</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-zinc-200"></span>
+<span class="text-[11px] font-bold tracking-wide text-secondary uppercase">Ooo</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Contextual FAB (Only visible if core action matches) -->
+<div class="fixed bottom-8 right-8 z-50">
+<button class="flex items-center gap-3 bg-on-surface text-surface py-4 px-6 rounded-full font-headline font-bold tracking-tight shadow-2xl hover:scale-105 transition-all active:scale-95 group">
+<span class="material-symbols-outlined group-hover:rotate-90 transition-transform">add_circle</span>
+            Register Guest
+        </button>
+</div>
+</body></html>

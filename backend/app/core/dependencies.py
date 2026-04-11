@@ -20,7 +20,7 @@ async def get_current_user(
 ):
     """
     Dependency: Extract and validate the current user from JWT token.
-    Returns the UserAccount model instance.
+    Returns the UserAccount model instance with employee loaded.
     """
     from app.models.employee import UserAccount
 
@@ -40,7 +40,9 @@ async def get_current_user(
 
     from sqlalchemy.orm import joinedload
     result = await db.execute(
-        select(UserAccount).options(joinedload(UserAccount.role)).where(UserAccount.user_id == user_id)
+        select(UserAccount)
+        .options(joinedload(UserAccount.role), joinedload(UserAccount.employee))
+        .where(UserAccount.user_id == user_id)
     )
     user = result.scalar_one_or_none()
 

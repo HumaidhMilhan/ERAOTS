@@ -1,22 +1,32 @@
 """
 Scan Event API — FR1 (Biometric Event Listener) + FR2 (Occupancy Engine).
 The heart of the system: receives scans, toggles state, updates occupancy.
+
+Hybrid "Away vs On-Desk" Architecture:
+- Hierarchy of Truth: Biometric OUT > Manual Toggle > Calendar Sync
+- 30-Second Rule: Calendar transitions require confirmation or auto-confirm after timeout
 """
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 from datetime import datetime, timezone, timedelta
-from typing import List
+from typing import List, Optional
 import uuid
 import json
 import logging
 
 from app.core.database import get_db
 from app.core.security import hash_fingerprint
-from app.models.employee import Employee
-from app.models.events import ScanEvent, OccupancyState
+from app.core.dependencies import get_current_user
+from app.models.employee import Employee, UserAccount
+from app.models.events import ScanEvent, OccupancyState, PendingStateTransition, OCCUPANCY_STATUSES
 from app.models.hardware import Scanner
-from app.api.schemas import ScanEventRequest, ScanEventResponse, OccupancyOverview, EmployeeOccupancyState
+from app.models.notifications import Notification
+from app.api.schemas import (
+    ScanEventRequest, ScanEventResponse, OccupancyOverview, EmployeeOccupancyState,
+    StatusOverrideRequest, StatusOverrideResponse,
+    PendingTransitionResponse, TransitionActionRequest, TransitionActionResponse,
+)
 from app.core.config import settings
 
 router = APIRouter(prefix="/api/events", tags=["Scan Events"])
@@ -26,6 +36,7 @@ logger = logging.getLogger(__name__)
 dashboard_connections: List[WebSocket] = []
 
 DUPLICATE_SCAN_THRESHOLD_SECONDS = 10
+TRANSITION_TIMEOUT_SECONDS = 30  # The 30-second rule
 
 
 async def broadcast_to_dashboards(message: dict):
@@ -150,6 +161,7 @@ async def receive_scan_event(
         )
     
     # Step 4: Smart Toggle — determine direction (FR2.1)
+    # Updated to handle IN_MEETING status and Hierarchy of Truth
     state_result = await db.execute(
         select(OccupancyState).where(OccupancyState.employee_id == employee.employee_id)
     )
@@ -162,18 +174,24 @@ async def receive_scan_event(
             employee_id=employee.employee_id,
             current_status="ACTIVE",
             last_state_change=scan_time,
+            last_change_source="BIOMETRIC",
         )
         db.add(occupancy_state)
     else:
-        # Toggle based on current status
-        if occupancy_state.current_status in ("ACTIVE", "ON_BREAK", "AWAY"):
-            # Was inside or on break → this scan means EXIT
+        # Toggle based on current status (IN_MEETING is treated as "inside")
+        if occupancy_state.current_status in ("ACTIVE", "ON_BREAK", "AWAY", "IN_MEETING"):
+            # Was inside (including in meeting) → this scan means EXIT
             direction = "OUT"
-            occupancy_state.current_status = "ON_BREAK"  # Will transition to AWAY after threshold
+            occupancy_state.current_status = "OUTSIDE"  # Biometric OUT = Ultimate Priority
+            occupancy_state.last_change_source = "BIOMETRIC"
+            
+            # HIERARCHY OF TRUTH: Biometric OUT aborts any pending calendar transitions
+            await abort_pending_transitions(db, employee.employee_id, "BIOMETRIC_OUT")
         else:
             # Was outside → this scan means ENTRY
             direction = "IN"
             occupancy_state.current_status = "ACTIVE"
+            occupancy_state.last_change_source = "BIOMETRIC"
         
         occupancy_state.last_state_change = scan_time
     
@@ -263,7 +281,7 @@ async def get_recent_events(
 
 @router.get("/occupancy", response_model=OccupancyOverview)
 async def get_occupancy(db: AsyncSession = Depends(get_db)):
-    """FR2.4: Get current real-time occupancy overview."""
+    """FR2.4: Get current real-time occupancy overview (including IN_MEETING status)."""
     
     # Count by status
     result = await db.execute(
@@ -275,16 +293,19 @@ async def get_occupancy(db: AsyncSession = Depends(get_db)):
     counts = {row[0]: row[1] for row in result.all()}
     
     active = counts.get("ACTIVE", 0)
+    in_meeting = counts.get("IN_MEETING", 0)
     on_break = counts.get("ON_BREAK", 0)
     away = counts.get("AWAY", 0)
     outside = counts.get("OUTSIDE", 0)
-    total_inside = active + on_break  # ON_BREAK employees are still "around"
+    # IN_MEETING employees are inside the building but away from desk
+    total_inside = active + in_meeting + on_break
     
     return OccupancyOverview(
         total_inside=total_inside,
         total_capacity=settings.OFFICE_CAPACITY,
         occupancy_percentage=round((total_inside / settings.OFFICE_CAPACITY) * 100, 1) if settings.OFFICE_CAPACITY > 0 else 0,
         active_count=active,
+        in_meeting_count=in_meeting,
         on_break_count=on_break,
         away_count=away,
         outside_count=outside,
@@ -343,3 +364,492 @@ async def dashboard_websocket(websocket: WebSocket):
     except WebSocketDisconnect:
         dashboard_connections.remove(websocket)
         logger.info(f"Dashboard client disconnected. Total: {len(dashboard_connections)}")
+
+
+# ==================== HYBRID STATUS TRACKING (The 30-Second Rule) ====================
+
+async def abort_pending_transitions(
+    db: AsyncSession, 
+    employee_id: uuid.UUID, 
+    reason: str
+) -> int:
+    """
+    Abort all pending transitions for an employee (Hierarchy of Truth enforcement).
+    Called when biometric OUT scan occurs or manual override is applied.
+    Returns the count of aborted transitions.
+    """
+    result = await db.execute(
+        select(PendingStateTransition).where(
+            and_(
+                PendingStateTransition.employee_id == employee_id,
+                PendingStateTransition.status == "PENDING"
+            )
+        )
+    )
+    pending = result.scalars().all()
+    
+    aborted_count = 0
+    now = datetime.now(timezone.utc)
+    for transition in pending:
+        transition.status = "ABORTED"
+        transition.resolution_source = reason
+        transition.resolved_at = now
+        aborted_count += 1
+        logger.info(f"Aborted pending transition {transition.transition_id} for employee {employee_id} due to {reason}")
+    
+    return aborted_count
+
+
+async def create_meeting_transition(
+    db: AsyncSession,
+    employee_id: uuid.UUID,
+    calendar_event_id: Optional[str],
+    calendar_event_title: Optional[str],
+    current_status: str,
+) -> PendingStateTransition:
+    """
+    Create a pending state transition for a calendar meeting (30-second rule).
+    Also creates an actionable notification for the employee.
+    """
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(seconds=TRANSITION_TIMEOUT_SECONDS)
+    
+    # Create the pending transition
+    transition = PendingStateTransition(
+        employee_id=employee_id,
+        trigger_source="CALENDAR_SYNC",
+        calendar_event_id=calendar_event_id,
+        calendar_event_title=calendar_event_title,
+        from_status=current_status,
+        to_status="IN_MEETING",
+        triggered_at=now,
+        expires_at=expires_at,
+        status="PENDING",
+    )
+    db.add(transition)
+    await db.flush()
+    
+    # Create actionable notification
+    meeting_name = calendar_event_title or "Scheduled Meeting"
+    notification = Notification(
+        recipient_id=employee_id,
+        title=f"Meeting Starting: {meeting_name}",
+        message=f"Transitioning your status to 'In Meeting' in {TRANSITION_TIMEOUT_SECONDS} seconds.",
+        type="MEETING_TRANSITION",
+        channel="IN_APP",
+        priority="HIGH",
+        is_actionable=True,
+        action_type="CONFIRM_TRANSITION",
+        action_metadata={
+            "transition_id": str(transition.transition_id),
+            "buttons": [
+                {"label": "Cancel", "action": "CANCEL"},
+                {"label": "Confirm Now", "action": "CONFIRM"},
+            ],
+            "expires_at": expires_at.isoformat(),
+            "meeting_title": meeting_name,
+        },
+        delivery_status="DELIVERED",
+    )
+    db.add(notification)
+    await db.flush()
+    
+    # Link notification to transition
+    transition.notification_id = notification.notification_id
+    
+    # Broadcast to dashboards
+    await broadcast_to_dashboards({
+        "type": "PENDING_TRANSITION",
+        "employee_id": str(employee_id),
+        "transition_id": str(transition.transition_id),
+        "meeting_title": meeting_name,
+        "expires_at": expires_at.isoformat(),
+    })
+    
+    logger.info(f"Created pending meeting transition for employee {employee_id}: {meeting_name}")
+    return transition
+
+
+@router.get("/pending-transitions", response_model=List[PendingTransitionResponse])
+async def get_pending_transitions(
+    current_user: UserAccount = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get all pending state transitions for the current user.
+    These are calendar-triggered transitions awaiting confirmation (30-second rule).
+    """
+    result = await db.execute(
+        select(PendingStateTransition).where(
+            and_(
+                PendingStateTransition.employee_id == current_user.employee_id,
+                PendingStateTransition.status == "PENDING"
+            )
+        ).order_by(PendingStateTransition.expires_at.asc())
+    )
+    transitions = result.scalars().all()
+    
+    now = datetime.now(timezone.utc)
+    responses = []
+    for t in transitions:
+        seconds_remaining = max(0, int((t.expires_at - now).total_seconds()))
+        responses.append(PendingTransitionResponse(
+            transition_id=t.transition_id,
+            employee_id=t.employee_id,
+            trigger_source=t.trigger_source,
+            calendar_event_title=t.calendar_event_title,
+            from_status=t.from_status,
+            to_status=t.to_status,
+            triggered_at=t.triggered_at,
+            expires_at=t.expires_at,
+            seconds_remaining=seconds_remaining,
+            status=t.status,
+            notification_id=t.notification_id,
+        ))
+    
+    return responses
+
+
+@router.put("/pending-transitions/{transition_id}/action", response_model=TransitionActionResponse)
+async def action_pending_transition(
+    transition_id: uuid.UUID,
+    action_request: TransitionActionRequest,
+    current_user: UserAccount = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    User action on a pending transition: CONFIRM or CANCEL.
+    
+    - CANCEL: Abort the transition, keep current status (employee stays ACTIVE)
+    - CONFIRM: Immediately execute the transition (employee becomes IN_MEETING)
+    """
+    action = action_request.action.upper()
+    if action not in ("CONFIRM", "CANCEL"):
+        raise HTTPException(status_code=400, detail="Action must be CONFIRM or CANCEL")
+    
+    # Find the transition
+    result = await db.execute(
+        select(PendingStateTransition).where(
+            PendingStateTransition.transition_id == transition_id
+        )
+    )
+    transition = result.scalar_one_or_none()
+    
+    if not transition:
+        raise HTTPException(status_code=404, detail="Transition not found")
+    
+    if transition.employee_id != current_user.employee_id:
+        raise HTTPException(status_code=403, detail="Cannot modify another user's transition")
+    
+    if transition.status != "PENDING":
+        raise HTTPException(status_code=400, detail=f"Transition already resolved: {transition.status}")
+    
+    now = datetime.now(timezone.utc)
+    
+    # Get the employee's occupancy state
+    state_result = await db.execute(
+        select(OccupancyState).where(OccupancyState.employee_id == current_user.employee_id)
+    )
+    occupancy_state = state_result.scalar_one_or_none()
+    
+    if action == "CANCEL":
+        transition.status = "CANCELLED"
+        transition.resolution_source = "USER_CANCEL"
+        transition.resolved_at = now
+        new_status = occupancy_state.current_status if occupancy_state else "ACTIVE"
+        message = "Meeting transition cancelled. Status unchanged."
+        logger.info(f"User cancelled meeting transition {transition_id}")
+    else:  # CONFIRM
+        transition.status = "CONFIRMED"
+        transition.resolution_source = "USER_CONFIRM"
+        transition.resolved_at = now
+        
+        # Update occupancy state to IN_MEETING
+        if occupancy_state:
+            occupancy_state.current_status = "IN_MEETING"
+            occupancy_state.last_state_change = now
+            occupancy_state.last_change_source = "CALENDAR_SYNC"
+        
+        new_status = "IN_MEETING"
+        message = "Status changed to In Meeting."
+        logger.info(f"User confirmed meeting transition {transition_id}")
+        
+        # Broadcast status change
+        await broadcast_to_dashboards({
+            "type": "STATUS_CHANGE",
+            "employee_id": str(current_user.employee_id),
+            "new_status": "IN_MEETING",
+            "source": "CALENDAR_CONFIRM",
+            "timestamp": now.isoformat(),
+        })
+    
+    # Update the notification
+    if transition.notification_id:
+        notif_result = await db.execute(
+            select(Notification).where(Notification.notification_id == transition.notification_id)
+        )
+        notification = notif_result.scalar_one_or_none()
+        if notification:
+            notification.action_taken = action
+            notification.action_taken_at = now
+            notification.is_read = True
+            notification.read_at = now
+    
+    await db.commit()
+    
+    return TransitionActionResponse(
+        transition_id=transition_id,
+        action_taken=action,
+        new_status=new_status,
+        message=message,
+    )
+
+
+@router.put("/pending-transitions/{transition_id}/reject", response_model=TransitionActionResponse)
+async def reject_pending_transition(
+    transition_id: uuid.UUID,
+    current_user: UserAccount = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Shortcut to reject/cancel a pending transition.
+    Equivalent to calling action with CANCEL.
+    """
+    return await action_pending_transition(
+        transition_id=transition_id,
+        action_request=TransitionActionRequest(action="CANCEL"),
+        current_user=current_user,
+        db=db,
+    )
+
+
+# ==================== MANUAL STATUS OVERRIDE (Hierarchy of Truth: High Priority) ====================
+
+@router.put("/status-override", response_model=StatusOverrideResponse)
+async def override_status(
+    override: StatusOverrideRequest,
+    current_user: UserAccount = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Manual portal toggle for status override.
+    
+    Hierarchy of Truth: Manual override takes precedence over calendar syncing.
+    Valid target statuses: ACTIVE (At Desk) or IN_MEETING (Away/In Meeting)
+    
+    This endpoint:
+    1. Validates the employee is currently inside the building
+    2. Aborts any pending calendar transitions
+    3. Updates the occupancy state with MANUAL source
+    """
+    target_status = override.status.upper()
+    
+    # Validate target status
+    if target_status not in ("ACTIVE", "IN_MEETING"):
+        raise HTTPException(
+            status_code=400, 
+            detail="Status must be ACTIVE (At Desk) or IN_MEETING (Away/In Meeting)"
+        )
+    
+    # Get current occupancy state
+    result = await db.execute(
+        select(OccupancyState).where(OccupancyState.employee_id == current_user.employee_id)
+    )
+    occupancy_state = result.scalar_one_or_none()
+    
+    if not occupancy_state:
+        raise HTTPException(status_code=404, detail="No occupancy state found. Please scan in first.")
+    
+    # Cannot override if outside the building
+    if occupancy_state.current_status == "OUTSIDE":
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot override status while outside the building. Scan in first."
+        )
+    
+    previous_status = occupancy_state.current_status
+    now = datetime.now(timezone.utc)
+    
+    # Abort any pending calendar transitions (Manual > Calendar in hierarchy)
+    aborted = await abort_pending_transitions(db, current_user.employee_id, "MANUAL_OVERRIDE")
+    if aborted > 0:
+        logger.info(f"Manual override aborted {aborted} pending transition(s)")
+    
+    # Update the status
+    occupancy_state.current_status = target_status
+    occupancy_state.last_state_change = now
+    occupancy_state.last_change_source = "MANUAL"
+    
+    await db.commit()
+    
+    logger.info(f"Manual status override: {current_user.employee.full_name} {previous_status} -> {target_status}")
+    
+    # Broadcast to dashboards
+    await broadcast_to_dashboards({
+        "type": "STATUS_CHANGE",
+        "employee_id": str(current_user.employee_id),
+        "previous_status": previous_status,
+        "new_status": target_status,
+        "source": "MANUAL",
+        "timestamp": now.isoformat(),
+    })
+    
+    return StatusOverrideResponse(
+        employee_id=current_user.employee_id,
+        previous_status=previous_status,
+        new_status=target_status,
+        change_source="MANUAL",
+        changed_at=now,
+    )
+
+
+# ==================== CALENDAR SYNC TRIGGER (For Background Job / External Caller) ====================
+
+@router.post("/trigger-meeting-transition", response_model=PendingTransitionResponse)
+async def trigger_meeting_transition(
+    employee_id: uuid.UUID,
+    calendar_event_id: Optional[str] = None,
+    calendar_event_title: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Trigger a meeting transition for an employee (called by calendar sync service).
+    
+    This creates a PendingStateTransition with the 30-second rule:
+    - If employee confirms: immediately transition to IN_MEETING
+    - If employee cancels: stay at current status
+    - If timeout (30s): auto-confirm and transition to IN_MEETING
+    
+    Note: This endpoint should be protected by internal API key in production.
+    """
+    # Get employee's current occupancy state
+    result = await db.execute(
+        select(OccupancyState).where(OccupancyState.employee_id == employee_id)
+    )
+    occupancy_state = result.scalar_one_or_none()
+    
+    if not occupancy_state:
+        raise HTTPException(status_code=404, detail="Employee has no occupancy state")
+    
+    # Only trigger if employee is inside the building
+    if occupancy_state.current_status == "OUTSIDE":
+        raise HTTPException(
+            status_code=400, 
+            detail="Employee is outside the building. No transition needed."
+        )
+    
+    # Don't trigger if already in meeting
+    if occupancy_state.current_status == "IN_MEETING":
+        raise HTTPException(
+            status_code=400, 
+            detail="Employee is already in a meeting."
+        )
+    
+    # Check for existing pending transition
+    existing_result = await db.execute(
+        select(PendingStateTransition).where(
+            and_(
+                PendingStateTransition.employee_id == employee_id,
+                PendingStateTransition.status == "PENDING"
+            )
+        )
+    )
+    existing = existing_result.scalar_one_or_none()
+    if existing:
+        raise HTTPException(
+            status_code=400, 
+            detail="Employee already has a pending transition."
+        )
+    
+    # Create the pending transition with 30-second rule
+    transition = await create_meeting_transition(
+        db=db,
+        employee_id=employee_id,
+        calendar_event_id=calendar_event_id,
+        calendar_event_title=calendar_event_title,
+        current_status=occupancy_state.current_status,
+    )
+    
+    await db.commit()
+    
+    now = datetime.now(timezone.utc)
+    return PendingTransitionResponse(
+        transition_id=transition.transition_id,
+        employee_id=transition.employee_id,
+        trigger_source=transition.trigger_source,
+        calendar_event_title=transition.calendar_event_title,
+        from_status=transition.from_status,
+        to_status=transition.to_status,
+        triggered_at=transition.triggered_at,
+        expires_at=transition.expires_at,
+        seconds_remaining=TRANSITION_TIMEOUT_SECONDS,
+        status=transition.status,
+        notification_id=transition.notification_id,
+    )
+
+
+async def process_expired_transitions(db: AsyncSession) -> int:
+    """
+    Process all expired pending transitions (auto-confirm after 30 seconds).
+    This should be called by a background task/scheduler.
+    Returns the count of auto-confirmed transitions.
+    """
+    now = datetime.now(timezone.utc)
+    
+    result = await db.execute(
+        select(PendingStateTransition).where(
+            and_(
+                PendingStateTransition.status == "PENDING",
+                PendingStateTransition.expires_at <= now
+            )
+        )
+    )
+    expired = result.scalars().all()
+    
+    auto_confirmed = 0
+    for transition in expired:
+        # Get employee's occupancy state
+        state_result = await db.execute(
+            select(OccupancyState).where(OccupancyState.employee_id == transition.employee_id)
+        )
+        occupancy_state = state_result.scalar_one_or_none()
+        
+        # Only auto-confirm if employee is still inside (not scanned out)
+        if occupancy_state and occupancy_state.current_status != "OUTSIDE":
+            transition.status = "AUTO_CONFIRMED"
+            transition.resolution_source = "TIMEOUT"
+            transition.resolved_at = now
+            
+            occupancy_state.current_status = "IN_MEETING"
+            occupancy_state.last_state_change = now
+            occupancy_state.last_change_source = "CALENDAR_SYNC"
+            
+            auto_confirmed += 1
+            logger.info(f"Auto-confirmed meeting transition for employee {transition.employee_id}")
+            
+            # Broadcast status change
+            await broadcast_to_dashboards({
+                "type": "STATUS_CHANGE",
+                "employee_id": str(transition.employee_id),
+                "new_status": "IN_MEETING",
+                "source": "CALENDAR_AUTO",
+                "timestamp": now.isoformat(),
+            })
+        else:
+            # Employee scanned out, abort the transition
+            transition.status = "ABORTED"
+            transition.resolution_source = "EMPLOYEE_LEFT"
+            transition.resolved_at = now
+        
+        # Update notification
+        if transition.notification_id:
+            notif_result = await db.execute(
+                select(Notification).where(Notification.notification_id == transition.notification_id)
+            )
+            notification = notif_result.scalar_one_or_none()
+            if notification:
+                notification.action_taken = "TIMEOUT" if transition.status == "AUTO_CONFIRMED" else "ABORTED"
+                notification.action_taken_at = now
+    
+    await db.commit()
+    return auto_confirmed

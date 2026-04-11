@@ -28,6 +28,13 @@ class UserInfo(BaseModel):
     role: str
     full_name: str
     department: Optional[str] = None
+    department_id: Optional[UUID] = None
+    is_manager: bool = False
+    managed_department_id: Optional[UUID] = None
+    managed_department_name: Optional[str] = None
+    phone: Optional[str] = None
+    profile_image_url: Optional[str] = None
+    permissions: dict = {}
 
     class Config:
         from_attributes = True
@@ -127,6 +134,7 @@ class OccupancyOverview(BaseModel):
     total_capacity: int
     occupancy_percentage: float
     active_count: int
+    in_meeting_count: int  # NEW: Employees in meetings
     on_break_count: int
     away_count: int
     outside_count: int
@@ -283,5 +291,96 @@ class PolicyResponse(BaseModel):
     value: dict
     is_active: bool
     
+    class Config:
+        from_attributes = True
+
+
+# ==================== HYBRID STATUS TRACKING ====================
+
+class StatusOverrideRequest(BaseModel):
+    """Manual portal toggle for status override (Hierarchy of Truth: High Priority)."""
+    status: str = Field(..., description="Target status: ACTIVE or IN_MEETING")
+
+class StatusOverrideResponse(BaseModel):
+    employee_id: UUID
+    previous_status: str
+    new_status: str
+    change_source: str
+    changed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PendingTransitionResponse(BaseModel):
+    """Pending calendar-triggered state transition (30-second rule)."""
+    transition_id: UUID
+    employee_id: UUID
+    trigger_source: str
+    calendar_event_title: Optional[str] = None
+    from_status: str
+    to_status: str
+    triggered_at: datetime
+    expires_at: datetime
+    seconds_remaining: int
+    status: str
+    notification_id: Optional[UUID] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TransitionActionRequest(BaseModel):
+    """User action on a pending transition."""
+    action: str = Field(..., description="Action: CONFIRM or CANCEL")
+
+
+class TransitionActionResponse(BaseModel):
+    transition_id: UUID
+    action_taken: str
+    new_status: str
+    message: str
+
+    class Config:
+        from_attributes = True
+
+
+class CalendarSettingsUpdate(BaseModel):
+    """Update employee calendar settings."""
+    provider: Optional[str] = None  # GOOGLE, MICROSOFT, ICAL, NONE
+    is_enabled: Optional[bool] = None
+    ical_url: Optional[str] = None
+    sync_enabled: Optional[bool] = None
+    auto_transition_enabled: Optional[bool] = None
+
+
+class CalendarSettingsResponse(BaseModel):
+    settings_id: UUID
+    employee_id: UUID
+    provider: str
+    is_enabled: bool
+    sync_enabled: bool
+    auto_transition_enabled: bool
+    last_sync_at: Optional[datetime] = None
+    sync_error: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ActionableNotificationResponse(BaseModel):
+    """Notification with interactive action buttons."""
+    notification_id: UUID
+    title: str
+    message: str
+    type: str
+    priority: str
+    is_actionable: bool
+    action_type: Optional[str] = None
+    action_metadata: Optional[dict] = None
+    action_taken: Optional[str] = None
+    expires_at: Optional[datetime] = None
+    created_at: datetime
+
     class Config:
         from_attributes = True

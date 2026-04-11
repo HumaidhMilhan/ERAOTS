@@ -1,9 +1,11 @@
 /**
  * ERAOTS — Main Application Component.
- * Sets up routing, auth context, and navigation structure.
+ * Sets up routing, auth context, theme context, and navigation structure.
+ * Design System: Vigilant Glass (Bento + Glassmorphism)
  */
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import AppLayout from './layouts/AppLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -17,8 +19,13 @@ import EmergencyPage from './pages/EmergencyPage';
 import ScannersPage from './pages/ScannersPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
+import ProfilePage from './pages/ProfilePage';
+import MyAttendancePage from './pages/MyAttendancePage';
+import MySchedulePage from './pages/MySchedulePage';
+import TeamPage from './pages/TeamPage';
+import DevToolsPage from './pages/DevToolsPage';
 import PlaceholderPage from './pages/PlaceholderPage';
-import './index.css';
+import './styles/index.css';
 
 /**
  * Protected route wrapper — redirects to login if not authenticated.
@@ -33,10 +40,18 @@ function ProtectedRoute({ children }) {
         alignItems: 'center',
         justifyContent: 'center',
         height: '100vh',
-        background: 'var(--bg-primary)',
-        color: 'var(--text-secondary)',
+        background: 'var(--surface)',
+        color: 'var(--secondary)',
+        fontFamily: 'var(--font-headline)',
+        fontWeight: 600,
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        fontSize: '0.75rem',
       }}>
-        Loading...
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="pulse-indicator" />
+          Loading...
+        </div>
       </div>
     );
   }
@@ -48,41 +63,124 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+/**
+ * Role-based route wrapper — redirects to dashboard if user doesn't have required role.
+ */
+function RoleRoute({ children, allowedRoles }) {
+  const { user } = useAuth();
+  
+  if (!allowedRoles.includes(user?.role)) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
+}
+
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public */}
-          <Route path="/login" element={<LoginPage />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public */}
+            <Route path="/login" element={<LoginPage />} />
 
-          {/* Protected — inside the app layout */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <AppLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<DashboardPage />} />
-            <Route path="employees" element={<EmployeesPage />} />
-            <Route path="departments" element={<DepartmentsPage />} />
-            <Route path="attendance" element={<AttendancePage />} />
-            <Route path="schedules" element={<SchedulesPage />} />
-            <Route path="corrections" element={<CorrectionsPage />} />
-            <Route path="notifications" element={<NotificationsPage />} />
-            <Route path="scanners" element={<ScannersPage />} />
-            <Route path="emergency" element={<EmergencyPage />} />
-            <Route path="analytics" element={<AnalyticsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
+            {/* Protected — inside the app layout */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              {/* Dashboard - everyone */}
+              <Route index element={<DashboardPage />} />
+              
+              {/* Employee personal pages */}
+              <Route path="my-profile" element={<ProfilePage />} />
+              <Route path="my-attendance" element={<MyAttendancePage />} />
+              <Route path="my-schedule" element={<MySchedulePage />} />
+              
+              {/* Manager team pages */}
+              <Route path="team" element={
+                <RoleRoute allowedRoles={['MANAGER']}>
+                  <TeamPage />
+                </RoleRoute>
+              } />
+              <Route path="team-attendance" element={
+                <RoleRoute allowedRoles={['MANAGER']}>
+                  <AttendancePage departmentScoped />
+                </RoleRoute>
+              } />
+              <Route path="team-schedules" element={
+                <RoleRoute allowedRoles={['MANAGER']}>
+                  <SchedulesPage departmentScoped />
+                </RoleRoute>
+              } />
+              
+              {/* Admin/HR pages */}
+              <Route path="employees" element={
+                <RoleRoute allowedRoles={['HR_MANAGER', 'SUPER_ADMIN']}>
+                  <EmployeesPage />
+                </RoleRoute>
+              } />
+              <Route path="departments" element={
+                <RoleRoute allowedRoles={['HR_MANAGER', 'SUPER_ADMIN']}>
+                  <DepartmentsPage />
+                </RoleRoute>
+              } />
+              <Route path="attendance" element={
+                <RoleRoute allowedRoles={['HR_MANAGER', 'SUPER_ADMIN']}>
+                  <AttendancePage />
+                </RoleRoute>
+              } />
+              <Route path="schedules" element={
+                <RoleRoute allowedRoles={['HR_MANAGER', 'SUPER_ADMIN']}>
+                  <SchedulesPage />
+                </RoleRoute>
+              } />
+              <Route path="scanners" element={
+                <RoleRoute allowedRoles={['HR_MANAGER', 'SUPER_ADMIN']}>
+                  <ScannersPage />
+                </RoleRoute>
+              } />
+              <Route path="emergency" element={
+                <RoleRoute allowedRoles={['HR_MANAGER', 'SUPER_ADMIN']}>
+                  <EmergencyPage />
+                </RoleRoute>
+              } />
+              <Route path="analytics" element={
+                <RoleRoute allowedRoles={['HR_MANAGER', 'SUPER_ADMIN']}>
+                  <AnalyticsPage />
+                </RoleRoute>
+              } />
+              <Route path="settings" element={
+                <RoleRoute allowedRoles={['HR_MANAGER', 'SUPER_ADMIN']}>
+                  <SettingsPage />
+                </RoleRoute>
+              } />
+              
+              {/* Super Admin dev tools */}
+              <Route path="dev-tools" element={
+                <RoleRoute allowedRoles={['SUPER_ADMIN']}>
+                  <DevToolsPage />
+                </RoleRoute>
+              } />
+              
+              {/* Corrections - all roles but different views */}
+              <Route path="corrections" element={<CorrectionsPage />} />
+              
+              {/* Notifications - everyone */}
+              <Route path="notifications" element={<NotificationsPage />} />
+            </Route>
 
-          {/* Catch-all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+            {/* Catch-all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

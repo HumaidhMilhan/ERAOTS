@@ -7,7 +7,7 @@ export default function CorrectionsPage() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     correction_date: '',
     correction_type: 'MISSED_SCAN',
@@ -57,29 +57,64 @@ export default function CorrectionsPage() {
   };
 
   const isHR = user && (user.role === 'HR_MANAGER' || user.role === 'SUPER_ADMIN');
+  const pendingCount = requests.filter(r => r.status === 'PENDING').length;
+  const approvedCount = requests.filter(r => r.status === 'APPROVED').length;
 
   return (
-    <div>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Attendance Corrections</h1>
-          <p className="page-subtitle">Dispute attendance records and log missed biometric scans.</p>
+    <div className="page-container">
+      {/* Page Header */}
+      <header className="page-header-premium">
+        <div className="page-header-content">
+          <span className="page-header-chip">RECORD MANAGEMENT</span>
+          <h1 className="page-title-premium">Corrections</h1>
+          <p className="page-subtitle-premium">Dispute attendance records and log missed biometric scans</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-          + File Correction
-        </button>
+      </header>
+
+      {/* Stats Row */}
+      <div className="stats-row">
+        <div className="stat-card-mini">
+          <span className="stat-card-mini-label">Total</span>
+          <span className="stat-card-mini-value">{requests.length}</span>
+        </div>
+        <div className="stat-card-mini">
+          <span className="stat-card-mini-label">Pending</span>
+          <span className="stat-card-mini-value">{pendingCount}</span>
+        </div>
+        <div className="stat-card-mini">
+          <span className="stat-card-mini-label">Approved</span>
+          <span className="stat-card-mini-value">{approvedCount}</span>
+        </div>
+        <div className="stat-card-mini stat-card-mini--accent">
+          <span className="stat-card-mini-label">Rejected</span>
+          <span className="stat-card-mini-value">{requests.length - pendingCount - approvedCount}</span>
+        </div>
       </div>
 
-      <div className="card">
+      {/* Table Card */}
+      <div className="table-card-premium">
+        <div className="table-card-header">
+          <div className="table-card-title-group">
+            <span className="material-symbols-outlined table-card-icon">edit_note</span>
+            <div>
+              <h2 className="table-card-title">Correction Requests</h2>
+              <p className="table-card-subtitle">{requests.length} requests submitted</p>
+            </div>
+          </div>
+        </div>
+
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>
+          <div className="table-loading">
+            <div className="loading-spinner"></div>
+            <span>Loading correction requests...</span>
+          </div>
         ) : (
-          <div className="table-container">
-            <table>
+          <div className="table-wrapper">
+            <table className="premium-table">
               <thead>
                 <tr>
                   {isHR && <th>Employee</th>}
-                  <th>Request Date</th>
+                  <th>Date</th>
                   <th>Type</th>
                   <th>Proposed Time</th>
                   <th>Status</th>
@@ -89,34 +124,67 @@ export default function CorrectionsPage() {
               <tbody>
                 {requests.length === 0 ? (
                   <tr>
-                    <td colSpan={isHR ? 6 : 5} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                      No correction requests found.
+                    <td colSpan={isHR ? 6 : 5} className="table-empty">
+                      <span className="material-symbols-outlined">fact_check</span>
+                      <p>No correction requests found</p>
                     </td>
                   </tr>
                 ) : (
                   requests.map(req => (
                     <tr key={req.request_id}>
-                      {isHR && <td style={{ fontWeight: 600 }}>{req.employee_name}</td>}
-                      <td>{req.correction_date}</td>
-                      <td>{req.correction_type.replace('_', ' ')}</td>
-                      <td style={{ color: 'var(--text-secondary)' }}>
-                        {new Date(req.proposed_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      {isHR && (
+                        <td>
+                          <span className="table-cell-name">{req.employee_name}</span>
+                        </td>
+                      )}
+                      <td>
+                        <span className="table-cell-date">{req.correction_date}</span>
                       </td>
                       <td>
-                        <span className={`status-badge ${req.status === 'APPROVED' ? 'active' : req.status === 'REJECTED' ? 'outside' : 'away'}`}>
-                          {req.status}
+                        <span className="correction-type-chip">
+                          {req.correction_type.replace('_', ' ')}
                         </span>
-                        <div style={{fontSize: '0.75rem', marginTop: '4px', color:'var(--text-secondary)'}}>{req.reason}</div>
+                      </td>
+                      <td>
+                        <span className="table-cell-time">
+                          {new Date(req.proposed_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="status-with-reason">
+                          <span className={`status-chip ${
+                            req.status === 'APPROVED' ? 'status-chip--active' :
+                            req.status === 'REJECTED' ? 'status-chip--danger' :
+                            'status-chip--warning'
+                          }`}>
+                            {req.status}
+                          </span>
+                          {req.reason && (
+                            <span className="status-reason">{req.reason}</span>
+                          )}
+                        </div>
                       </td>
                       {isHR && (
                         <td>
                           {req.status === 'PENDING' ? (
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                              <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', color: 'var(--success)' }} onClick={() => handleStatusUpdate(req.request_id, 'APPROVED')}>Approve</button>
-                              <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', color: 'var(--danger)' }} onClick={() => handleStatusUpdate(req.request_id, 'REJECTED')}>Reject</button>
+                            <div className="action-buttons">
+                              <button
+                                className="action-btn action-btn--approve"
+                                onClick={() => handleStatusUpdate(req.request_id, 'APPROVED')}
+                                title="Approve"
+                              >
+                                <span className="material-symbols-outlined">check</span>
+                              </button>
+                              <button
+                                className="action-btn action-btn--reject"
+                                onClick={() => handleStatusUpdate(req.request_id, 'REJECTED')}
+                                title="Reject"
+                              >
+                                <span className="material-symbols-outlined">close</span>
+                              </button>
                             </div>
                           ) : (
-                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Resolved</span>
+                            <span className="table-cell-secondary">Resolved</span>
                           )}
                         </td>
                       )}
@@ -129,39 +197,85 @@ export default function CorrectionsPage() {
         )}
       </div>
 
+      {/* Floating Action Button */}
+      <button className="fab" onClick={() => setIsModalOpen(true)} title="File Correction">
+        <span className="material-symbols-outlined">add</span>
+      </button>
+
+      {/* Modal */}
       {isModalOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
-          <div className="card" style={{ width: '100%', maxWidth: '400px', margin: '1rem' }}>
-            <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>File Correction</h2>
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-header-content">
+                <span className="material-symbols-outlined modal-header-icon">edit_calendar</span>
+                <div>
+                  <h2 className="modal-title">File Correction</h2>
+                  <p className="modal-subtitle">Request attendance record adjustment</p>
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setIsModalOpen(false)}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label className="form-label">Correction Type</label>
-                <select className="form-input" required value={formData.correction_type} onChange={e => setFormData({...formData, correction_type: e.target.value})}>
+                <select
+                  className="form-input"
+                  required
+                  value={formData.correction_type}
+                  onChange={e => setFormData({ ...formData, correction_type: e.target.value })}
+                >
                   <option value="MISSED_SCAN">Missed Scan / Left Badge</option>
                   <option value="WRONG_SCAN">Scanned Wrong Door</option>
                   <option value="OTHER">Other System Error</option>
                 </select>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+
+              <div className="modal-form-grid">
                 <div className="form-group">
                   <label className="form-label">Date of Missing Event</label>
-                  <input type="date" className="form-input" required value={formData.correction_date} onChange={e => setFormData({...formData, correction_date: e.target.value})} />
+                  <input
+                    type="date"
+                    className="form-input"
+                    required
+                    value={formData.correction_date}
+                    onChange={e => setFormData({ ...formData, correction_date: e.target.value })}
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Estimated Time</label>
-                  <input type="time" className="form-input" required value={formData.proposed_time} onChange={e => setFormData({...formData, proposed_time: e.target.value})} />
+                  <input
+                    type="time"
+                    className="form-input"
+                    required
+                    value={formData.proposed_time}
+                    onChange={e => setFormData({ ...formData, proposed_time: e.target.value })}
+                  />
                 </div>
               </div>
+
               <div className="form-group">
                 <label className="form-label">Explanation</label>
-                <textarea className="form-input" rows="3" required placeholder="Forgot badge inside car..." value={formData.reason} onChange={e => setFormData({...formData, reason: e.target.value})}></textarea>
+                <textarea
+                  className="form-input"
+                  rows="3"
+                  required
+                  placeholder="Brief explanation of what happened..."
+                  value={formData.reason}
+                  onChange={e => setFormData({ ...formData, reason: e.target.value })}
+                />
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                <button type="button" className="btn btn-ghost" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Submit Correction</button>
+
+              <div className="modal-actions">
+                <button type="button" className="btn btn-ghost" onClick={() => setIsModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Submit Correction
+                </button>
               </div>
             </form>
           </div>

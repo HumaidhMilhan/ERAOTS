@@ -1,10 +1,13 @@
 /**
  * Auth Context — manages login state across the app.
  */
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
+
+// Role hierarchy (higher index = more permissions)
+const ROLE_HIERARCHY = ['EMPLOYEE', 'MANAGER', 'HR_MANAGER', 'SUPER_ADMIN'];
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -41,8 +44,54 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    const meRes = await authAPI.getMe();
+    setUser(meRes.data);
+    return meRes.data;
+  };
+
+  // Role helper functions
+  const roleHelpers = useMemo(() => {
+    const role = user?.role || 'EMPLOYEE';
+    const roleIndex = ROLE_HIERARCHY.indexOf(role);
+    
+    return {
+      // Check if user has exact role
+      hasRole: (roleName) => user?.role === roleName,
+      
+      // Check if user has at least this role level
+      hasMinRole: (minRole) => {
+        const minIndex = ROLE_HIERARCHY.indexOf(minRole);
+        return roleIndex >= minIndex;
+      },
+      
+      // Quick role checks
+      isEmployee: role === 'EMPLOYEE',
+      isManager: role === 'MANAGER' || user?.is_manager,
+      isHR: role === 'HR_MANAGER',
+      isSuperAdmin: role === 'SUPER_ADMIN',
+      isAdmin: roleIndex >= ROLE_HIERARCHY.indexOf('HR_MANAGER'), // HR or higher
+      
+      // Check specific permission
+      hasPermission: (permission) => {
+        const perms = user?.permissions || {};
+        return perms.all === true || perms[permission] === true;
+      },
+      
+      // Get managed department (for managers)
+      getManagedDepartmentId: () => user?.managed_department_id,
+    };
+  }, [user]);
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      loading, 
+      refreshUser,
+      ...roleHelpers 
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,0 +1,303 @@
+/**
+ * ProfilePage — Personal profile management for employees.
+ * Allows viewing and editing personal details, changing password.
+ */
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { authAPI, attendanceAPI, leaveAPI } from '../services/api';
+
+export default function ProfilePage() {
+  const { user, refreshUser } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [formData, setFormData] = useState({
+    phone: '',
+    profile_image_url: '',
+  });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [stats, setStats] = useState({
+    presentDays: 0,
+    lateDays: 0,
+    leaveDays: 0,
+    pendingRequests: 0,
+  });
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        phone: user.phone || '',
+        profile_image_url: user.profile_image_url || '',
+      });
+      fetchStats();
+    }
+  }, [user]);
+
+  const fetchStats = async () => {
+    try {
+      // Fetch attendance stats for current month
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+      
+      const [attendanceRes, leaveRes] = await Promise.all([
+        attendanceAPI.list({ employee_id: user.employee_id, start_date: startOfMonth, end_date: endOfMonth }),
+        leaveAPI.myRequests(),
+      ]);
+      
+      const records = attendanceRes.data || [];
+      const leaves = leaveRes.data || [];
+      
+      setStats({
+        presentDays: records.filter(r => r.status === 'PRESENT' || r.status === 'LATE').length,
+        lateDays: records.filter(r => r.status === 'LATE').length,
+        leaveDays: leaves.filter(l => l.status === 'APPROVED').reduce((sum, l) => {
+          const start = new Date(l.start_date);
+          const end = new Date(l.end_date);
+          return sum + Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        }, 0),
+        pendingRequests: leaves.filter(l => l.status === 'PENDING').length,
+      });
+    } catch (err) {
+      console.error('Failed to fetch stats:', err);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+    try {
+      await authAPI.updateProfile(formData);
+      await refreshUser();
+      setEditing(false);
+      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to update profile' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setMessage({ type: 'error', text: 'New passwords do not match' });
+      return;
+    }
+    if (passwordData.newPassword.length < 6) {
+      setMessage({ type: 'error', text: 'Password must be at least 6 characters' });
+      return;
+    }
+    
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+    try {
+      await authAPI.changePassword(passwordData.currentPassword, passwordData.newPassword);
+      setShowPasswordModal(false);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setMessage({ type: 'success', text: 'Password changed successfully!' });
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to change password' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="page-container">
+      {/* Page Header */}
+      <header className="page-header-premium">
+        <div className="page-header-content">
+          <span className="page-header-chip">PERSONAL</span>
+          <h1 className="page-title-premium">My Profile</h1>
+          <p className="page-subtitle-premium">View and manage your personal information</p>
+        </div>
+      </header>
+
+      {/* Message */}
+      {message.text && (
+        <div className={`alert-banner ${message.type === 'error' ? 'alert-banner--error' : 'alert-banner--success'}`}>
+          <span className="material-symbols-outlined">
+            {message.type === 'error' ? 'error' : 'check_circle'}
+          </span>
+          <span>{message.text}</span>
+          <button className="alert-banner-dismiss" onClick={() => setMessage({ type: '', text: '' })}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+      )}
+
+      <div className="profile-layout">
+        {/* Profile Card */}
+        <div className="profile-card glass-card">
+          <div className="profile-avatar-section">
+            <div className="profile-avatar-large">
+              {user?.profile_image_url ? (
+                <img src={user.profile_image_url} alt={user.full_name} />
+              ) : (
+                <span>{user?.full_name?.charAt(0)?.toUpperCase() || 'U'}</span>
+              )}
+            </div>
+            <div className="profile-name-section">
+              <h2 className="profile-name">{user?.full_name}</h2>
+              <span className="profile-role-badge">{user?.role?.replace('_', ' ')}</span>
+            </div>
+          </div>
+
+          <div className="profile-details">
+            <div className="profile-detail-row">
+              <span className="material-symbols-outlined">email</span>
+              <span>{user?.email}</span>
+            </div>
+            <div className="profile-detail-row">
+              <span className="material-symbols-outlined">phone</span>
+              {editing ? (
+                <input
+                  type="text"
+                  className="profile-input"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="Enter phone number"
+                />
+              ) : (
+                <span>{user?.phone || 'Not set'}</span>
+              )}
+            </div>
+            <div className="profile-detail-row">
+              <span className="material-symbols-outlined">corporate_fare</span>
+              <span>{user?.department || 'No Department'}</span>
+            </div>
+            {user?.is_manager && (
+              <div className="profile-detail-row">
+                <span className="material-symbols-outlined">manage_accounts</span>
+                <span>Manager of {user?.managed_department_name}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="profile-actions">
+            {editing ? (
+              <>
+                <button className="btn-secondary" onClick={() => setEditing(false)} disabled={loading}>
+                  Cancel
+                </button>
+                <button className="btn-primary" onClick={handleSaveProfile} disabled={loading}>
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn-secondary" onClick={() => setEditing(true)}>
+                  <span className="material-symbols-outlined">edit</span>
+                  Edit Profile
+                </button>
+                <button className="btn-secondary" onClick={() => setShowPasswordModal(true)}>
+                  <span className="material-symbols-outlined">key</span>
+                  Change Password
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="profile-stats-grid">
+          <div className="stat-card glass-card">
+            <span className="material-symbols-outlined stat-icon" style={{ color: 'var(--success)' }}>
+              event_available
+            </span>
+            <div className="stat-content">
+              <span className="stat-value">{stats.presentDays}</span>
+              <span className="stat-label">Days Present</span>
+            </div>
+          </div>
+          
+          <div className="stat-card glass-card">
+            <span className="material-symbols-outlined stat-icon" style={{ color: 'var(--warning)' }}>
+              schedule
+            </span>
+            <div className="stat-content">
+              <span className="stat-value">{stats.lateDays}</span>
+              <span className="stat-label">Late Arrivals</span>
+            </div>
+          </div>
+          
+          <div className="stat-card glass-card">
+            <span className="material-symbols-outlined stat-icon" style={{ color: 'var(--accent)' }}>
+              beach_access
+            </span>
+            <div className="stat-content">
+              <span className="stat-value">{stats.leaveDays}</span>
+              <span className="stat-label">Leave Days</span>
+            </div>
+          </div>
+          
+          <div className="stat-card glass-card">
+            <span className="material-symbols-outlined stat-icon" style={{ color: 'var(--secondary)' }}>
+              pending
+            </span>
+            <div className="stat-content">
+              <span className="stat-value">{stats.pendingRequests}</span>
+              <span className="stat-label">Pending Requests</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="modal-overlay" onClick={() => setShowPasswordModal(false)}>
+          <div className="modal-content modal-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Change Password</h3>
+              <button className="modal-close" onClick={() => setShowPasswordModal(false)}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Current Password</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label>New Password</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Confirm New Password</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setShowPasswordModal(false)}>
+                Cancel
+              </button>
+              <button className="btn-primary" onClick={handleChangePassword} disabled={loading}>
+                {loading ? 'Changing...' : 'Change Password'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

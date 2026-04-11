@@ -1,5 +1,6 @@
 """
 Processed daily attendance records.
+Supports Hybrid "Away vs On-Desk" tracking with IN_MEETING time separation.
 """
 import uuid
 from datetime import datetime, timezone
@@ -15,6 +16,11 @@ class AttendanceRecord(Base):
     """
     Processed daily summary per employee.
     Computed from scan events at end-of-day or on-demand (FR4).
+    
+    Productive Time Calculation:
+    - total_active_time_min: Time spent at desk (ACTIVE status)
+    - total_meeting_time_min: Time spent in meetings (IN_MEETING status)
+    - total_productive_time_min: Calculated as active + meeting time
     """
     __tablename__ = "attendance_records"
 
@@ -24,7 +30,9 @@ class AttendanceRecord(Base):
     first_entry = Column(DateTime(timezone=True), nullable=True)
     last_exit = Column(DateTime(timezone=True), nullable=True)
     total_time_in_building_min = Column(Integer, nullable=True, default=0)
-    total_active_time_min = Column(Integer, nullable=True, default=0)
+    total_active_time_min = Column(Integer, nullable=True, default=0)  # True desk time (ACTIVE only)
+    total_meeting_time_min = Column(Integer, nullable=True, default=0)  # IN_MEETING chunks
+    total_productive_time_min = Column(Integer, nullable=True, default=0)  # active + meeting
     break_count = Column(Integer, nullable=True, default=0)
     total_break_duration_min = Column(Integer, nullable=True, default=0)
     status = Column(String(20), nullable=False, default="PRESENT")  # PRESENT, ABSENT, HALF_DAY, LEAVE, HOLIDAY

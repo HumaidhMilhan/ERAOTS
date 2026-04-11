@@ -1,9 +1,12 @@
 /**
  * Login Page — ERAOTS authentication screen.
+ * Design System: Vigilant Glass (Bento + Glassmorphism)
+ * Premium redesign for 1 Billion Tech pitch
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -11,6 +14,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -22,82 +26,147 @@ export default function LoginPage() {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.detail || 'Authentication failed. Verify credentials.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
+    <div className="login-page">
+      {/* Ambient Background */}
+      <div className="login-ambient" />
+      
+      {/* Theme Toggle - Top Right */}
+      <div className="login-theme-toggle">
+        <button
+          onClick={toggleTheme}
+          className="theme-toggle-btn"
+          title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          <span className="material-symbols-outlined">
+            {isDark ? 'light_mode' : 'dark_mode'}
+          </span>
+        </button>
+      </div>
+
+      {/* Main Login Card */}
       <div className="login-card">
-        <div className="login-logo">
-          <div className="login-logo-icon">E</div>
-          <span className="login-logo-text">ERAOTS</span>
+        {/* Brand Header */}
+        <div className="login-brand">
+          <div className="login-brand-icon">
+            <span 
+              className="material-symbols-outlined" 
+              style={{ fontSize: '2rem', fontVariationSettings: "'FILL' 1" }}
+            >
+              pulse_alert
+            </span>
+          </div>
+          <div className="login-brand-text">
+            <h1 className="login-brand-name">ERAOTS</h1>
+            <span className="login-brand-tagline">Vigilant Glass</span>
+          </div>
         </div>
 
-        <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
-          Enterprise Attendance & Occupancy Tracking
-        </p>
+        {/* Welcome Text */}
+        <div className="login-welcome">
+          <h2 className="login-title">Welcome Back</h2>
+          <p className="login-subtitle">
+            Enterprise Real-Time Attendance & Occupancy Tracking System
+          </p>
+        </div>
 
+        {/* Error Alert */}
         {error && (
-          <div style={{
-            background: 'var(--danger-bg)',
-            border: '1px solid var(--danger)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '0.625rem 0.875rem',
-            marginBottom: '1rem',
-            fontSize: '0.8rem',
-            color: 'var(--danger)',
-          }}>
-            {error}
+          <div className="login-alert login-alert-error">
+            <span className="material-symbols-outlined">error</span>
+            <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Email</label>
-            <input
-              type="email"
-              className="form-input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@eraots.com"
-              required
-              autoFocus
-            />
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="login-field">
+            <label className="login-label">Email Address</label>
+            <div className="login-input-wrapper">
+              <span className="material-symbols-outlined login-input-icon">mail</span>
+              <input
+                type="email"
+                className="login-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+                autoFocus
+                autoComplete="email"
+              />
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <input
-              type="password"
-              className="form-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-            />
+          <div className="login-field">
+            <label className="login-label">Password</label>
+            <div className="login-input-wrapper">
+              <span className="material-symbols-outlined login-input-icon">lock</span>
+              <input
+                type="password"
+                className="login-input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                autoComplete="current-password"
+              />
+            </div>
           </div>
 
           <button
             type="submit"
-            className="btn btn-primary"
+            className="login-submit"
             disabled={loading}
-            style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem' }}
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? (
+              <>
+                <span className="login-spinner" />
+                <span>Authenticating</span>
+              </>
+            ) : (
+              <>
+                <span>Sign In</span>
+                <span className="material-symbols-outlined">arrow_forward</span>
+              </>
+            )}
           </button>
         </form>
 
-        <p style={{
-          color: 'var(--text-tertiary)',
-          textAlign: 'center',
-          marginTop: '1.5rem',
-          fontSize: '0.75rem',
-        }}>
-          Default: admin@eraots.com / admin123
-        </p>
+        {/* Credentials Hint */}
+        <div className="login-hint">
+          <div className="login-hint-header">
+            <span className="material-symbols-outlined">info</span>
+            <span>Demo Credentials</span>
+          </div>
+          <div className="login-hint-credentials">
+            <div className="login-hint-row">
+              <span className="login-hint-label">Admin:</span>
+              <code>admin@eraots.com</code>
+              <span className="login-hint-divider">/</span>
+              <code>admin123</code>
+            </div>
+            <div className="login-hint-row">
+              <span className="login-hint-label">Employee:</span>
+              <code>employee@eraots.com</code>
+              <span className="login-hint-divider">/</span>
+              <code>employee123</code>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Version Footer */}
+      <div className="login-footer">
+        <span className="login-footer-dot" />
+        <span>ERAOTS v1.0.0</span>
+        <span className="login-footer-separator">•</span>
+        <span>Vigilant Glass Design System</span>
       </div>
     </div>
   );

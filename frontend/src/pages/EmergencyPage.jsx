@@ -5,9 +5,11 @@ import { useAuth } from '../context/AuthContext';
 export default function EmergencyPage() {
   const { user } = useAuth();
   const [activeEmergency, setActiveEmergency] = useState(null);
+  const [emergencyHistory, setEmergencyHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
   const [loading, setLoading] = useState(true);
-  
-  // Polling interval if emergency is active
+  const [historyLoading, setHistoryLoading] = useState(false);
+
   useEffect(() => {
     fetchActive();
     const interval = setInterval(fetchActive, 5000);
@@ -23,6 +25,25 @@ export default function EmergencyPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await emergencyAPI.getHistory();
+      setEmergencyHistory(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch emergency history", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const toggleHistory = () => {
+    if (!showHistory && emergencyHistory.length === 0) {
+      fetchHistory();
+    }
+    setShowHistory(!showHistory);
   };
 
   const handleTrigger = async () => {
@@ -49,10 +70,9 @@ export default function EmergencyPage() {
   const handleAccountFor = async (headcountId) => {
     try {
       await emergencyAPI.markAccounted(headcountId);
-      // Optimistic update
       setActiveEmergency(prev => ({
         ...prev,
-        headcount_entries: prev.headcount_entries.map(e => 
+        headcount_entries: prev.headcount_entries.map(e =>
           e.id === headcountId ? { ...e, accounted_for: true, accounted_at: new Date().toISOString() } : e
         )
       }));
@@ -61,103 +81,202 @@ export default function EmergencyPage() {
     }
   };
 
-  if (loading && !activeEmergency) return <div style={{padding:'2rem', textAlign:'center'}}>Loading...</div>;
+  if (loading && !activeEmergency) {
+    return (
+      <div className="page-container">
+        <div className="table-loading">
+          <div className="loading-spinner"></div>
+          <span>Loading emergency status...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'HR_MANAGER';
+  const missingCount = activeEmergency?.headcount_entries?.filter(e => !e.accounted_for).length || 0;
+  const safeCount = activeEmergency?.headcount_entries?.filter(e => e.accounted_for).length || 0;
 
   return (
-    <div>
-      <div className="page-header" style={{ marginBottom: '1rem' }}>
-        <div>
-          <h1 className="page-title">Emergency Mode</h1>
-          <p className="page-subtitle">Evacuation headcount and muster point tracking.</p>
+    <div className="page-container">
+      {/* Page Header */}
+      <header className="page-header-premium">
+        <div className="page-header-content">
+          <span className="page-header-chip page-header-chip--emergency">SAFETY PROTOCOL</span>
+          <h1 className="page-title-premium">Emergency Mode</h1>
+          <p className="page-subtitle-premium">Evacuation headcount and muster point tracking</p>
         </div>
-        {!activeEmergency && (user?.role === 'SUPER_ADMIN' || user?.role === 'HR_MANAGER') && (
-          <button 
-            className="btn btn-primary" 
-            style={{ backgroundColor: 'var(--danger)', color: 'white', border: 'none', fontSize:'1.1rem', padding:'0.75rem 1.5rem', fontWeight:'bold' }}
-            onClick={handleTrigger}
-          >
-            🚨 TRIGGER EVACUATION
-          </button>
-        )}
-      </div>
+        <button 
+          className={`btn btn-ghost ${showHistory ? 'btn-ghost--active' : ''}`}
+          onClick={toggleHistory}
+        >
+          <span className="material-symbols-outlined">history</span>
+          {showHistory ? 'Hide History' : 'View History'}
+        </button>
+      </header>
+
+      {/* Emergency History Panel */}
+      {showHistory && (
+        <div className="emergency-history-panel">
+          <div className="emergency-history-header">
+            <span className="material-symbols-outlined">history</span>
+            <h3>Emergency History</h3>
+          </div>
+          {historyLoading ? (
+            <div className="emergency-history-loading">
+              <div className="loading-spinner"></div>
+              <span>Loading history...</span>
+            </div>
+          ) : emergencyHistory.length === 0 ? (
+            <div className="emergency-history-empty">
+              <span className="material-symbols-outlined">check_circle</span>
+              <span>No emergency events on record</span>
+            </div>
+          ) : (
+            <div className="emergency-history-list">
+              {emergencyHistory.filter(e => e.status === 'RESOLVED').map(emergency => (
+                <div key={emergency.emergency_id} className="emergency-history-item">
+                  <div className="emergency-history-item-header">
+                    <span className="emergency-history-type">{emergency.emergency_type}</span>
+                    <span className="emergency-history-status">RESOLVED</span>
+                  </div>
+                  <div className="emergency-history-item-details">
+                    <div className="emergency-history-detail">
+                      <span className="material-symbols-outlined">schedule</span>
+                      <span>Activated: {new Date(emergency.activation_time).toLocaleString()}</span>
+                    </div>
+                    {emergency.deactivation_time && (
+                      <div className="emergency-history-detail">
+                        <span className="material-symbols-outlined">check_circle</span>
+                        <span>Resolved: {new Date(emergency.deactivation_time).toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="emergency-history-detail">
+                      <span className="material-symbols-outlined">group</span>
+                      <span>Headcount: {emergency.headcount_at_activation || 0} personnel</span>
+                    </div>
+                  </div>
+                  {emergency.notes && (
+                    <div className="emergency-history-notes">
+                      <span className="material-symbols-outlined">notes</span>
+                      <span>{emergency.notes}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {!activeEmergency ? (
-        <div className="card" style={{ textAlign: 'center', padding: '4rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
-          <h2>Building is Safe</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>There are no active emergencies.</p>
+        /* Safe State */
+        <div className="emergency-safe-card">
+          <div className="emergency-safe-icon">
+            <span className="material-symbols-outlined">verified_user</span>
+          </div>
+          <h2 className="emergency-safe-title">Building is Safe</h2>
+          <p className="emergency-safe-text">There are no active emergencies</p>
+
+          {isAdmin && (
+            <button className="btn btn-danger btn-large" onClick={handleTrigger}>
+              <span className="material-symbols-outlined">emergency</span>
+              Trigger Evacuation
+            </button>
+          )}
         </div>
       ) : (
-        <div style={{ animation: 'pulse-bg 2s infinite alternate' }}>
-          <style>{`
-            @keyframes pulse-bg {
-              0% { background-color: rgba(239, 68, 68, 0.05); }
-              100% { background-color: rgba(239, 68, 68, 0.15); border-radius: 8px; }
-            }
-          `}</style>
-          
-          <div className="card" style={{ border: '2px solid var(--danger)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', paddingBottom:'1rem', borderBottom:'1px solid var(--border)' }}>
+        /* Active Emergency */
+        <div className="emergency-active">
+          {/* Alert Banner */}
+          <div className="emergency-banner">
+            <div className="emergency-banner-content">
+              <span className="material-symbols-outlined emergency-banner-icon">emergency</span>
               <div>
-                <h2 style={{ color: 'var(--danger)', margin: 0 }}>🚨 EVACUATION ACTIVE</h2>
-                <p style={{ color: 'var(--text-secondary)', margin: 0, marginTop:'0.5rem' }}>
-                  Activated at: {new Date(activeEmergency.activation_time).toLocaleTimeString()}
+                <h2 className="emergency-banner-title">EVACUATION ACTIVE</h2>
+                <p className="emergency-banner-time">
+                  Activated at {new Date(activeEmergency.activation_time).toLocaleTimeString()}
                 </p>
               </div>
-              <button className="btn btn-ghost" style={{color:'initial', border:'1px solid var(--border)'}} onClick={handleResolve}>
+            </div>
+            {isAdmin && (
+              <button className="btn btn-ghost btn-resolve" onClick={handleResolve}>
+                <span className="material-symbols-outlined">check_circle</span>
                 Resolve Emergency
               </button>
+            )}
+          </div>
+
+          {/* Stats Grid */}
+          <div className="emergency-stats">
+            <div className="emergency-stat-card">
+              <span className="emergency-stat-value">{activeEmergency.headcount_at_activation}</span>
+              <span className="emergency-stat-label">Initial Headcount</span>
+            </div>
+            <div className="emergency-stat-card emergency-stat-card--danger">
+              <span className="emergency-stat-value">{missingCount}</span>
+              <span className="emergency-stat-label">Missing Personnel</span>
+            </div>
+            <div className="emergency-stat-card emergency-stat-card--success">
+              <span className="emergency-stat-value">{safeCount}</span>
+              <span className="emergency-stat-label">Accounted For</span>
+            </div>
+          </div>
+
+          {/* Muster Checklist */}
+          <div className="table-card-premium emergency-table">
+            <div className="table-card-header">
+              <div className="table-card-title-group">
+                <span className="material-symbols-outlined table-card-icon">fact_check</span>
+                <div>
+                  <h2 className="table-card-title">Muster Point Checklist</h2>
+                  <p className="table-card-subtitle">Mark personnel as safe when accounted for</p>
+                </div>
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-              <div style={{ padding:'1rem', background:'var(--bg-secondary)', borderRadius:'8px', textAlign:'center' }}>
-                <div style={{ fontSize:'2rem', fontWeight:'bold' }}>{activeEmergency.headcount_at_activation}</div>
-                <div style={{ color:'var(--text-secondary)', fontSize:'0.875rem' }}>Initial Headcount</div>
-              </div>
-              <div style={{ padding:'1rem', background:'var(--bg-secondary)', borderRadius:'8px', textAlign:'center' }}>
-                <div style={{ fontSize:'2rem', fontWeight:'bold', color: 'var(--danger)' }}>
-                    {activeEmergency.headcount_entries.filter(e => !e.accounted_for).length}
-                </div>
-                <div style={{ color:'var(--text-secondary)', fontSize:'0.875rem' }}>Missing Personnel</div>
-              </div>
-              <div style={{ padding:'1rem', background:'var(--bg-secondary)', borderRadius:'8px', textAlign:'center' }}>
-                <div style={{ fontSize:'2rem', fontWeight:'bold', color: 'var(--success)' }}>
-                    {activeEmergency.headcount_entries.filter(e => e.accounted_for).length}
-                </div>
-                <div style={{ color:'var(--text-secondary)', fontSize:'0.875rem' }}>Accounted For</div>
-              </div>
-            </div>
-
-            <h3 style={{ marginBottom: '1rem' }}>Muster Point Checklist</h3>
-            <div className="table-container">
-              <table>
+            <div className="table-wrapper">
+              <table className="premium-table">
                 <thead>
                   <tr>
                     <th>Employee Name</th>
                     <th>Status at Event</th>
                     <th>Safe Time</th>
-                    <th style={{textAlign:'right'}}>Action</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {activeEmergency.headcount_entries.map(entry => (
-                    <tr key={entry.id} style={{ background: entry.accounted_for ? 'rgba(16, 185, 129, 0.1)' : 'transparent' }}>
-                      <td style={{ fontWeight: '500' }}>{entry.employee_name}</td>
-                      <td>{entry.status_at_event}</td>
-                      <td style={{ color: 'var(--text-secondary)' }}>
-                        {entry.accounted_at ? new Date(entry.accounted_at).toLocaleTimeString() : '-'}
+                  {activeEmergency.headcount_entries?.map(entry => (
+                    <tr
+                      key={entry.id}
+                      className={entry.accounted_for ? 'emergency-row-safe' : 'emergency-row-missing'}
+                    >
+                      <td>
+                        <span className="table-cell-name">{entry.employee_name}</span>
                       </td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td>
+                        <span className="status-chip status-chip--active">{entry.status_at_event}</span>
+                      </td>
+                      <td>
+                        <span className="table-cell-time">
+                          {entry.accounted_at
+                            ? new Date(entry.accounted_at).toLocaleTimeString()
+                            : '—'}
+                        </span>
+                      </td>
+                      <td>
                         {!entry.accounted_for ? (
-                          <button 
-                            className="btn btn-primary" 
-                            style={{ padding: '0.25rem 0.75rem', fontSize:'0.875rem', backgroundColor:'var(--success)', border:'none', color:'white' }}
+                          <button
+                            className="btn btn-success btn-small"
                             onClick={() => handleAccountFor(entry.id)}
                           >
+                            <span className="material-symbols-outlined">check</span>
                             Mark Safe
                           </button>
                         ) : (
-                          <span style={{ color: 'var(--success)', fontWeight:'bold' }}>SAFE ✓</span>
+                          <span className="safe-badge">
+                            <span className="material-symbols-outlined">verified</span>
+                            SAFE
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -165,7 +284,6 @@ export default function EmergencyPage() {
                 </tbody>
               </table>
             </div>
-            
           </div>
         </div>
       )}

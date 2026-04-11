@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Presence Pulse | Dashboard</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+          tailwind.config = {
+            darkMode: "class",
+            theme: {
+              extend: {
+                "colors": {
+                        "primary": "#E60000",
+                        "surface": "#09090b",
+                        "on-surface": "#fafafa",
+                        "secondary": "#a1a1aa",
+                        "surface-container": "rgba(24, 24, 27, 0.4)",
+                        "outline-variant": "rgba(255, 255, 255, 0.1)"
+                },
+                "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                },
+                "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                }
+              },
+            },
+          }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .brand-font { font-family: 'Manrope', sans-serif; }
+        
+        .vigilant-glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .light .vigilant-glass {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 selection:bg-primary/30">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-20 bg-zinc-950/40 backdrop-blur-[24px] border-b border-white/15">
+<div class="flex items-center gap-10">
+<span class="text-xl font-black tracking-tighter text-white uppercase font-['Manrope']">Presence Pulse</span>
+<nav class="hidden md:flex gap-8 font-['Manrope'] font-medium tracking-tight">
+<a class="text-[#E60000] font-bold active:scale-[0.98] transition-all duration-300" href="#">Dashboard</a>
+<a class="text-zinc-400 hover:backdrop-blur-[40px] hover:text-white transition-all duration-300 active:scale-[0.98]" href="#">Live Map</a>
+<a class="text-zinc-400 hover:backdrop-blur-[40px] hover:text-white transition-all duration-300 active:scale-[0.98]" href="#">Employee List</a>
+<a class="text-zinc-400 hover:backdrop-blur-[40px] hover:text-white transition-all duration-300 active:scale-[0.98]" href="#">Analytics</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2.5 text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2.5 text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all active:scale-[0.98]" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-symbols-outlined">dark_mode</span>
+</button>
+<div class="w-10 h-10 rounded-xl overflow-hidden ring-1 ring-white/20 ml-2">
+<img alt="User Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAY-5LEI0fXQzL_4I1yrtXB2aJ61ZwzqiAKZ9_qtcLueAsLVjGQnQ8E1A-A3MFi_iRtQ188zMImNSHwc-TZ121F93Uc95UFYmnWzj25FM8mfflIjYogT8Uk1ioI1s8WKeYluZD5XMVzIWqu45awyiImka6c8Vg6gxleJ70Iqg0mhuj-IgJewS4dc7hHC2ATDyvqum5oIfJmniZbIcaX0O3QTQbKgk4a0CjSbaxjjyu65LZB3583KOs9rCC7sq2v6hFbAU1GkvnwmL01"/>
+</div>
+</div>
+</header>
+<div class="flex pt-20">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-20 h-[calc(100vh-80px)] w-72 z-[60] flex flex-col p-8 space-y-8 bg-zinc-950/60 backdrop-blur-[32px] border-r border-white/10 hidden lg:flex">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-[#E60000] flex items-center justify-center shadow-[0_8px_32px_rgba(230,0,0,0.3)]">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">pulse_alert</span>
+</div>
+<div>
+<h2 class="text-[#E60000] font-black text-xl tracking-tighter">HQ PULSE</h2>
+<p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Vigilant Glass</p>
+</div>
+</div>
+<div class="flex-1 space-y-2">
+<a class="flex items-center gap-3 bg-white/10 text-white rounded-xl px-4 py-3 ring-1 ring-inset ring-white/20 font-['Manrope'] text-sm tracking-wide uppercase transition-all duration-200" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 text-zinc-500 hover:bg-white/5 hover:text-zinc-200 px-4 py-3 font-['Manrope'] text-sm tracking-wide uppercase rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">map</span>
+                Map
+            </a>
+<a class="flex items-center gap-3 text-zinc-500 hover:bg-white/5 hover:text-zinc-200 px-4 py-3 font-['Manrope'] text-sm tracking-wide uppercase rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">groups</span>
+                Directory
+            </a>
+<a class="flex items-center gap-3 text-zinc-500 hover:bg-white/5 hover:text-zinc-200 px-4 py-3 font-['Manrope'] text-sm tracking-wide uppercase rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+                Analytics
+            </a>
+</div>
+<div class="space-y-4">
+<button class="w-full bg-[#E60000] hover:bg-red-700 text-white rounded-xl py-4 font-bold text-xs uppercase tracking-widest transition-all active:scale-[0.98] shadow-lg shadow-red-900/20">
+                Real-time Feed
+            </button>
+<div class="pt-4 border-t border-white/5 space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-xs font-bold text-zinc-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">help</span> HELP CENTER
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-xs font-bold text-zinc-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">logout</span> LOGOUT
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 p-6 md:p-12 max-w-7xl mx-auto lg:ml-72 transition-all">
+<!-- Header Pulse -->
+<div class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+<div>
+<h1 class="text-5xl md:text-6xl font-black tracking-tighter mb-3 uppercase">The Pulse</h1>
+<p class="text-zinc-400 font-medium text-lg">Real-time surveillance &amp; engagement across HQ</p>
+</div>
+<div class="flex gap-4">
+<div class="px-8 py-4 rounded-2xl vigilant-glass flex items-center gap-3 ring-1 ring-inset ring-white/10">
+<div class="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_12px_rgba(230,0,0,0.6)] animate-pulse"></div>
+<span class="text-sm font-black font-headline uppercase tracking-widest text-white">Live Updates</span>
+</div>
+</div>
+</div>
+<!-- Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<!-- Status Stats -->
+<div class="md:col-span-2 grid grid-cols-3 gap-4">
+<div class="vigilant-glass p-8 rounded-[2rem] flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.02]">
+<span class="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Active In</span>
+<span class="text-4xl font-black text-white">124</span>
+</div>
+<div class="vigilant-glass p-8 rounded-[2rem] flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.02]">
+<span class="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Out Office</span>
+<span class="text-4xl font-black text-white">18</span>
+</div>
+<div class="vigilant-glass p-8 rounded-[2rem] flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.02]">
+<span class="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">On Break</span>
+<span class="text-4xl font-black text-white">12</span>
+</div>
+</div>
+<!-- Featured Member Card -->
+<div class="md:col-span-2 vigilant-glass p-8 rounded-[2.5rem] flex items-center gap-8 group hover:bg-white/10 transition-all cursor-pointer">
+<div class="relative">
+<div class="w-20 h-20 rounded-full overflow-hidden border-2 border-primary/40 ring-4 ring-white/5">
+<img alt="Featured Member" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKDKJSIfopZPTD94sKDwTossUxskLxdLSurAzJCn9BlncVw_Kl5UvhEmFnWbXtJq5MFQTRiXjjG78bR2JOERzdHNzK3r79rEQ2Z0CO99ArBjoSHGdB1ofbRSW9ByY2NONqEpGc74tsyH0uHNhvTz_YhFimkBFKRf2nOrhfEM3NAzlCvlLYrFRsqFUEg0M1KAEBk-7S61wTJVPAWpYAqfb7TZ8taO5z6EoVo5WnOpCmilhXDa5anUrS2y3BEnLtzLVRufrdKT2P_fOc"/>
+</div>
+<div class="absolute bottom-1 right-1 w-5 h-5 bg-primary border-[3px] border-zinc-950 rounded-full shadow-[0_0_15px_rgba(230,0,0,0.5)]"></div>
+</div>
+<div class="flex-1">
+<span class="text-[10px] font-black text-primary uppercase tracking-[0.2em] block mb-1">Spotlight Member</span>
+<h3 class="text-2xl font-black font-headline text-white">Aria Henderson</h3>
+<p class="text-zinc-500 text-sm font-medium">Product Design Lead • Level 4</p>
+</div>
+<div class="w-12 h-12 rounded-full flex items-center justify-center bg-white/5 group-hover:bg-primary transition-all">
+<span class="material-symbols-outlined text-white">chevron_right</span>
+</div>
+</div>
+<!-- Miniature Map -->
+<div class="md:col-span-2 md:row-span-2 vigilant-glass rounded-[2.5rem] overflow-hidden relative group h-[400px]">
+<div class="absolute top-8 left-10 z-10">
+<h3 class="text-xl font-black font-headline text-white uppercase tracking-tighter">Floor Occupancy</h3>
+<p class="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em]">East Wing • Surveillance v2.1</p>
+</div>
+<div class="w-full h-full bg-zinc-900 relative">
+<img class="w-full h-full object-cover opacity-20 contrast-125 grayscale" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcTJVE9PfsOVFwlc6AUdJEqXU0gOFb2XV5VQi1GkagLMADCV_0EIFWnBoGHnXOXPLDBpZCr3TluknObEvqp5Se6dX-xknRqAH7syE0mwd1RDZ5dq4OkqXiPBKjaVijXDgzf52TtVU2IuUhU46ULIXOy_ZWzAPaeygm54V_jZH9IPbcxMwb6HfQ4JYVm75GOB2I3LD04b-xIlGZfyV7XeANBe_44ONIo9PTn7P39kKOPmoLk9a-C6bYmtMBUwOQCxTAAjSFF0ycJySZ"/>
+<!-- Presence Dots -->
+<div class="absolute top-1/4 left-1/3 w-4 h-4 bg-primary rounded-full shadow-[0_0_20px_rgba(230,0,0,1)] ring-2 ring-white/20 animate-pulse"></div>
+<div class="absolute top-1/2 left-1/2 w-4 h-4 bg-primary rounded-full shadow-[0_0_20px_rgba(230,0,0,1)] ring-2 ring-white/20"></div>
+<div class="absolute bottom-1/3 right-1/4 w-4 h-4 bg-primary rounded-full shadow-[0_0_20px_rgba(230,0,0,1)] ring-2 ring-white/20"></div>
+<div class="absolute top-2/3 left-1/4 w-3 h-3 bg-zinc-700 rounded-full"></div>
+</div>
+<div class="absolute bottom-8 left-1/2 -translate-x-1/2 w-[85%] py-4 px-6 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl flex justify-between items-center text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+<span>Lobby <b class="text-white ml-1">8</b></span>
+<span>Cafe <b class="text-white ml-1">24</b></span>
+<span>Desks <b class="text-white ml-1">92</b></span>
+</div>
+</div>
+<!-- Recent Clock-ins -->
+<div class="md:col-span-2 md:row-span-2 vigilant-glass p-10 rounded-[2.5rem] flex flex-col h-[400px]">
+<div class="flex justify-between items-center mb-8">
+<h3 class="text-xl font-black font-headline text-white uppercase tracking-tighter">Live Events</h3>
+<span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest rounded-full ring-1 ring-primary/20">Feed Active</span>
+</div>
+<div class="flex-1 space-y-8 overflow-y-auto pr-4 custom-scrollbar">
+<!-- Event 1 -->
+<div class="flex items-center gap-5 group">
+<div class="w-12 h-12 rounded-xl overflow-hidden grayscale group-hover:grayscale-0 transition-all ring-1 ring-white/10">
+<img alt="Marcus" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBR7jKxkyCCyxGYy-7Cjrw8Hbpxnus_lVWnck7rRduDDsqHxnc894IkIQVs-OvKMZFZZ3AqE-ViPLBX0vTQcuW6mujwFA5X2z2AyiZ1cwYMHXPLTyZbO0CaT-vnmnxBHy72WbNpagcUAs_sVMv-clbme8390_QYB17LSCmFl6CYBZsj9vHwEtG_mmN2TEpXY8UVe-1sUSrx55pEslRU9t4MAsUFQftpGjkL_JjCcM7HODjAT0xWOog9U0Prq474ndM-W0g1WtyEFxC9"/>
+</div>
+<div class="flex-1">
+<p class="text-sm font-black text-white uppercase tracking-tight">Marcus Chen</p>
+<p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Clocked In • 08:42 AM</p>
+</div>
+<div class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(230,0,0,0.8)]"></div>
+</div>
+<!-- Event 2 -->
+<div class="flex items-center gap-5 group">
+<div class="w-12 h-12 rounded-xl overflow-hidden grayscale group-hover:grayscale-0 transition-all ring-1 ring-white/10">
+<img alt="Elena" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWEB0JCsWH3JK9L4KqM97j3RX1i9T7JfbfFJ5JT9xuZ4dKkjc9-c-csQzHPYDA9YOK5AyUeEIVjp1TVQdfU3m0b3XJybux1a21zgjeh1m5QtbZQ6CZ743COqV8ak-Dyex19PTpMz1JCtF-Fu95PI9prCwDpMlyFz_V3SH677qN4FfqYSkbmchWvIfrlTbeTXpHhuAS7GZEbGO5rCkp0o3W2Vx79m1dEUG6z3sH0gM6AWIYxvWsUMdNyjcLQELRUHuRuNJrPJMbhO3X"/>
+</div>
+<div class="flex-1">
+<p class="text-sm font-black text-white uppercase tracking-tight">Elena Rodriguez</p>
+<p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Out to Lunch • 12:04 PM</p>
+</div>
+<div class="w-2 h-2 rounded-full bg-zinc-700"></div>
+</div>
+<!-- Event 3 -->
+<div class="flex items-center gap-5 group">
+<div class="w-12 h-12 rounded-xl overflow-hidden grayscale group-hover:grayscale-0 transition-all ring-1 ring-white/10">
+<img alt="James" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhHfeu2nnLtbXPRkpK2esQbjbq9N0lAMpIvKk6hm_bZ4b-F_aNtFo0YnK24fj1rNn-1DZMfRrxbrYexEgVrR_hij3HsQMf4PFxKucTr3qqJrYIMeFotYLhV9tzlrUGuyILGmY1M2TTmE5t8kTV1glAzeue9UCTyaLtKUaA2xMZaSBOOiA0kd4ME7t1iP2vujbuP9ZNm0er_ifJyAIhAF8tqXofXe7u3Kn-pNQX7sgzUlTomtg9iIxHEOclFIiYbikI9XB0Lz79VH0L"/>
+</div>
+<div class="flex-1">
+<p class="text-sm font-black text-white uppercase tracking-tight">Jameson Wu</p>
+<p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Returned • 01:15 PM</p>
+</div>
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+</div>
+</div>
+</div>
+<!-- Team Health/Analytics Small Card -->
+<div class="md:col-span-4 vigilant-glass p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-8 ring-1 ring-inset ring-white/5">
+<div class="flex items-center gap-8">
+<div class="flex -space-x-4">
+<img alt="Team 1" class="w-14 h-14 rounded-full border-4 border-zinc-950" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCz1q1TDZN6alJasxvN1NRahjGgVgzZcs-MuD-NoXAsyAXFrdQLgIyUvGm2pDoqDFJo5Vl1MNKjLz9nLg6m9Z_Ns8yRXuz4FaPoXUnfV0uIVq7bS5IYd1QqllZfrvXxHmEeo52pnkGrV934gmze8uWSuRZ8IYyAmYCOTm2AR6H5J5BFqCNyyKzXoqf6SZgN8A5khkL1Cd_P4uYhxhwdqCevnss57GtV4sz-UH5oDOMAT0SqOsJ058-a6NcHQ-4p1LUWS-Jy_Cn4ypu9"/>
+<img alt="Team 2" class="w-14 h-14 rounded-full border-4 border-zinc-950" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvfL-fs43Z079QruSgGuFph6UOgxGfMcLMrh_qLCwtMABS6DxovAakAwLES1KtF4HBP1AFZmWWL0-Xbg1UpPgHjaomZ0z9RSTTI5Oz9GvT2wWUDQ2nTaihnCIw5D-Cnfr_6qz-hEgI59yR_Ij42rx4DbyJgCermSIAGifx7oPnJ3sJsPUKDW2Ayxjl1yeuf6YlroC5bEXmte_DG5Pjw_BVSdjyZWQ0iYIsT0s1N51p56A-U4Up92xtiLckzXlXfwVNsCYGHJNvZ-zj"/>
+<div class="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center font-black text-sm border-4 border-zinc-950 shadow-xl">+82</div>
+</div>
+<div>
+<p class="font-black text-2xl text-white uppercase tracking-tighter">Team Engagement: OPTIMAL</p>
+<p class="text-zinc-500 text-sm font-medium">9 new agents active on floor in last 60m</p>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="px-8 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all">VIEW HEATMAP</button>
+<button class="px-8 py-3 bg-primary hover:bg-red-700 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-red-900/40">FULL REPORT</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Mobile Bottom Navigation -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-zinc-950/80 backdrop-blur-2xl border-t border-white/10 flex items-center justify-around px-6 z-[100]">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="text-[9px] font-black uppercase tracking-widest">Dash</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined">map</span>
+<span class="text-[9px] font-black uppercase tracking-widest">Map</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-[9px] font-black uppercase tracking-widest">People</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[9px] font-black uppercase tracking-widest">Data</span>
+</button>
+</div>
+<!-- Contextual FAB -->
+<div class="fixed bottom-24 md:bottom-10 right-8 md:right-12 z-[90]">
+<button class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-red-800 text-white shadow-[0_20px_50px_rgba(230,0,0,0.4)] flex items-center justify-center hover:scale-110 transition-all active:scale-95 group">
+<span class="material-symbols-outlined text-3xl group-hover:rotate-90 transition-transform duration-300" style="font-variation-settings: 'wght' 700;">add</span>
+</button>
+</div>
+</body></html>

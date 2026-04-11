@@ -7,6 +7,12 @@ export default function DepartmentsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [error, setError] = useState('');
+  
+  // Edit state
+  const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({ name: '', description: '', is_active: true });
+  const [editError, setEditError] = useState('');
 
   const fetchDepartments = async () => {
     try {
@@ -37,49 +43,135 @@ export default function DepartmentsPage() {
     }
   };
 
+  const handleEditClick = (dept) => {
+    setSelectedDepartment(dept);
+    setEditFormData({
+      name: dept.name || '',
+      description: dept.description || '',
+      is_active: dept.is_active !== false
+    });
+    setEditError('');
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setEditError('');
+    try {
+      await departmentAPI.update(selectedDepartment.department_id, editFormData);
+      setIsEditModalOpen(false);
+      setSelectedDepartment(null);
+      fetchDepartments();
+    } catch (err) {
+      setEditError(err.response?.data?.detail || 'Failed to update department');
+    }
+  };
+
+  const totalEmployees = departments.reduce((sum, d) => sum + (d.employee_count || 0), 0);
+  const activeCount = departments.filter(d => d.is_active).length;
+
   return (
-    <div>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Departments</h1>
-          <p className="page-subtitle">Manage company departments and view headcount.</p>
+    <div className="page-container">
+      {/* Page Header */}
+      <header className="page-header-premium">
+        <div className="page-header-content">
+          <span className="page-header-chip">ORGANIZATIONAL UNITS</span>
+          <h1 className="page-title-premium">Departments</h1>
+          <p className="page-subtitle-premium">Organizational structure and team headcount management</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-          + Add Department
-        </button>
+      </header>
+
+      {/* Stats Row */}
+      <div className="stats-row">
+        <div className="stat-card-mini">
+          <span className="stat-card-mini-label">Total Teams</span>
+          <span className="stat-card-mini-value">{departments.length}</span>
+        </div>
+        <div className="stat-card-mini">
+          <span className="stat-card-mini-label">Active</span>
+          <span className="stat-card-mini-value">{activeCount}</span>
+        </div>
+        <div className="stat-card-mini">
+          <span className="stat-card-mini-label">Personnel</span>
+          <span className="stat-card-mini-value">{totalEmployees}</span>
+        </div>
+        <div className="stat-card-mini stat-card-mini--accent">
+          <span className="stat-card-mini-label">Avg Team Size</span>
+          <span className="stat-card-mini-value">
+            {departments.length > 0 ? Math.round(totalEmployees / departments.length) : 0}
+          </span>
+        </div>
       </div>
 
-      <div className="card">
+      {/* Table Card */}
+      <div className="table-card-premium">
+        <div className="table-card-header">
+          <div className="table-card-title-group">
+            <span className="material-symbols-outlined table-card-icon">account_tree</span>
+            <div>
+              <h2 className="table-card-title">Department Registry</h2>
+              <p className="table-card-subtitle">{departments.length} organizational units configured</p>
+            </div>
+          </div>
+        </div>
+
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>Loading...</div>
+          <div className="table-loading">
+            <div className="loading-spinner"></div>
+            <span>Loading departments...</span>
+          </div>
         ) : (
-          <div className="table-container">
-            <table>
+          <div className="table-wrapper">
+            <table className="premium-table">
               <thead>
                 <tr>
-                  <th>Department Name</th>
+                  <th>Department</th>
                   <th>Description</th>
-                  <th>Employees</th>
+                  <th>Headcount</th>
                   <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {departments.length === 0 ? (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                      No departments found.
+                    <td colSpan="5" className="table-empty">
+                      <span className="material-symbols-outlined">folder_off</span>
+                      <p>No departments configured yet</p>
                     </td>
                   </tr>
                 ) : (
                   departments.map(dept => (
                     <tr key={dept.department_id}>
-                      <td style={{ fontWeight: 600 }}>{dept.name}</td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{dept.description || '-'}</td>
-                      <td>{dept.employee_count}</td>
                       <td>
-                        <span className={`status-badge ${dept.is_active ? 'active' : 'outside'}`}>
+                        <div className="table-cell-primary">
+                          <div className="dept-icon">
+                            <span className="material-symbols-outlined">groups</span>
+                          </div>
+                          <span className="table-cell-name">{dept.name}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="table-cell-secondary">
+                          {dept.description || 'No description'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="table-cell-metric">{dept.employee_count}</span>
+                      </td>
+                      <td>
+                        <span className={`status-chip ${dept.is_active ? 'status-chip--active' : 'status-chip--inactive'}`}>
                           {dept.is_active ? 'Active' : 'Inactive'}
                         </span>
+                      </td>
+                      <td>
+                        <button 
+                          className="table-action-btn"
+                          onClick={() => handleEditClick(dept)}
+                          title="Edit Department"
+                        >
+                          <span className="material-symbols-outlined">edit</span>
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -90,40 +182,137 @@ export default function DepartmentsPage() {
         )}
       </div>
 
+      {/* Floating Action Button */}
+      <button className="fab" onClick={() => setIsModalOpen(true)} title="Add Department">
+        <span className="material-symbols-outlined">add</span>
+      </button>
+
+      {/* Modal */}
       {isModalOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
-          <div className="card" style={{ width: '100%', maxWidth: '400px', margin: '1rem' }}>
-            <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>New Department</h2>
-            {error && <div style={{ color: 'var(--danger)', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</div>}
-            
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-header-content">
+                <span className="material-symbols-outlined modal-header-icon">domain_add</span>
+                <div>
+                  <h2 className="modal-title">New Department</h2>
+                  <p className="modal-subtitle">Create a new organizational unit</p>
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setIsModalOpen(false)}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {error && (
+              <div className="modal-error">
+                <span className="material-symbols-outlined">error</span>
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label className="form-label">Department Name</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
+                <input
+                  type="text"
+                  className="form-input"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  required 
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
                   placeholder="e.g. Engineering"
+                  autoFocus
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Description (Optional)</label>
-                <textarea 
-                  className="form-input" 
+                <label className="form-label">Description</label>
+                <textarea
+                  className="form-input"
                   rows="3"
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="What does this team do?"
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description of team responsibilities..."
                 />
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                <button type="button" className="btn btn-ghost" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Create</button>
+
+              <div className="modal-actions">
+                <button type="button" className="btn btn-ghost" onClick={() => setIsModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Create Department
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {isEditModalOpen && selectedDepartment && (
+        <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-header-content">
+                <span className="material-symbols-outlined modal-header-icon">edit</span>
+                <div>
+                  <h2 className="modal-title">Edit Department</h2>
+                  <p className="modal-subtitle">Update {selectedDepartment.name}</p>
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setIsEditModalOpen(false)}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {editError && (
+              <div className="modal-error">
+                <span className="material-symbols-outlined">error</span>
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleEditSubmit}>
+              <div className="form-group">
+                <label className="form-label">Department Name</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea
+                  className="form-input"
+                  rows="3"
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                  placeholder="Brief description of team responsibilities..."
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Status</label>
+                <select
+                  className="form-input"
+                  value={editFormData.is_active ? 'active' : 'inactive'}
+                  onChange={(e) => setEditFormData({ ...editFormData, is_active: e.target.value === 'active' })}
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="btn btn-ghost" onClick={() => setIsEditModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Save Changes
+                </button>
               </div>
             </form>
           </div>

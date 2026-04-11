@@ -26,58 +26,77 @@ export default function SettingsPage() {
     if (!policy) return;
 
     const updatedValue = { ...policy.value, [paramKey]: parseInt(val) || val };
-    
+
     try {
       await settingsAPI.updatePolicy(id, updatedValue);
-      // Optimistic update
       setPolicies(prev => prev.map(p => p.policy_id === id ? { ...p, value: updatedValue } : p));
     } catch (err) {
       alert("Failed to update policy: " + (err.response?.data?.detail || err.message));
-      fetchData(); // Reset
+      fetchData();
+    }
+  };
+
+  const getPolicyIcon = (type) => {
+    switch (type) {
+      case 'ATTENDANCE': return 'schedule';
+      case 'OVERTIME': return 'more_time';
+      case 'LEAVE': return 'event_available';
+      default: return 'settings';
     }
   };
 
   return (
-    <div>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Policy Engine</h1>
-          <p className="page-subtitle">Configure company-wide attendance and HR rules dynamically.</p>
+    <div className="page-container">
+      {/* Page Header */}
+      <header className="page-header-premium">
+        <div className="page-header-content">
+          <span className="page-header-chip">CONFIGURATION</span>
+          <h1 className="page-title-premium">Policy Engine</h1>
+          <p className="page-subtitle-premium">Configure company-wide attendance and HR rules</p>
         </div>
-      </div>
+      </header>
 
-      <div className="card" style={{ maxWidth: '800px' }}>
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '2rem' }}>Loading policies...</div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            {policies.map(policy => (
-              <div key={policy.policy_id} style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                  <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--primary)' }}>{policy.name}</h2>
-                  <span style={{ fontSize: '0.8rem', background: 'var(--bg-secondary)', padding: '0.2rem 0.5rem', borderRadius: '4px', color: 'var(--text-secondary)' }}>
-                    {policy.policy_type}
+      {/* Policies */}
+      {loading ? (
+        <div className="table-loading">
+          <div className="loading-spinner"></div>
+          <span>Loading policies...</span>
+        </div>
+      ) : (
+        <div className="policies-grid">
+          {policies.map(policy => (
+            <div key={policy.policy_id} className="policy-card">
+              <div className="policy-card-header">
+                <div className="policy-card-title-group">
+                  <span className="material-symbols-outlined policy-card-icon">
+                    {getPolicyIcon(policy.policy_type)}
                   </span>
-                </div>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                  {Object.entries(policy.value).map(([key, val]) => (
-                    <div key={key} className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label" style={{ textTransform: 'capitalize' }}>{key.replace('_', ' ')}</label>
-                      <input 
-                        type="number" 
-                        className="form-input" 
-                        defaultValue={val}
-                        onBlur={(e) => handleUpdate(policy.policy_id, key, e.target.value)}
-                      />
-                    </div>
-                  ))}
+                  <div>
+                    <h2 className="policy-card-title">{policy.name}</h2>
+                    <span className="policy-card-type">{policy.policy_type}</span>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              <div className="policy-params">
+                {Object.entries(policy.value).map(([key, val]) => (
+                  <div key={key} className="policy-param">
+                    <label className="policy-param-label">
+                      {key.replace(/_/g, ' ')}
+                    </label>
+                    <input
+                      type="number"
+                      className="policy-param-input"
+                      defaultValue={val}
+                      onBlur={(e) => handleUpdate(policy.policy_id, key, e.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

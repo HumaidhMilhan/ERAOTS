@@ -3,32 +3,21 @@
  */
 export default function PlaceholderPage({ title, description }) {
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      minHeight: '50vh',
-      gap: '1rem',
-    }}>
-      <div style={{
-        width: '80px',
-        height: '80px',
-        background: 'var(--bg-tertiary)',
-        borderRadius: 'var(--radius-xl)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '2rem',
-      }}>
-        🚧
+    <div className="page-container">
+      <div className="placeholder-card">
+        <div className="placeholder-icon-wrapper">
+          <span className="material-symbols-outlined placeholder-icon">construction</span>
+        </div>
+        <h2 className="placeholder-title">{title || 'Coming Soon'}</h2>
+        <p className="placeholder-text">
+          {description || 'This feature is under development and will be available in the next sprint.'}
+        </p>
+        <div className="placeholder-decoration">
+          <div className="placeholder-line"></div>
+          <span className="placeholder-chip">IN DEVELOPMENT</span>
+          <div className="placeholder-line"></div>
+        </div>
       </div>
-      <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)' }}>
-        {title || 'Coming Soon'}
-      </h2>
-      <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', maxWidth: '400px', textAlign: 'center' }}>
-        {description || 'This feature is under development and will be available in the next sprint.'}
-      </p>
     </div>
   );
 }

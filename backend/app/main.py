@@ -9,7 +9,7 @@ import logging
 
 from app.core.config import settings as app_settings
 from app.core.database import create_tables
-from app.api import auth, events, employees, attendance, schedules, corrections, notifications, emergency, scanners, settings
+from app.api import auth, events, employees, attendance, schedules, corrections, notifications, emergency, scanners, settings, reports
 
 # Configure logging
 logging.basicConfig(
@@ -79,14 +79,15 @@ app.include_router(notifications.router)
 app.include_router(emergency.router)
 app.include_router(scanners.router)
 app.include_router(settings.router)
+app.include_router(reports.router)
 
 
 @app.get("/", tags=["Health"])
 async def root():
     """Health check endpoint."""
     return {
-        "name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
+        "name": app_settings.APP_NAME,
+        "version": app_settings.APP_VERSION,
         "status": "running",
         "docs": "/docs",
     }
@@ -97,10 +98,10 @@ async def health_check():
     """Detailed health check."""
     return {
         "status": "healthy",
-        "version": settings.APP_VERSION,
+        "version": app_settings.APP_VERSION,
         "database": "connected",
-        "office_capacity": settings.OFFICE_CAPACITY,
-        "timezone": settings.OFFICE_TIMEZONE,
+        "office_capacity": app_settings.OFFICE_CAPACITY,
+        "timezone": app_settings.OFFICE_TIMEZONE,
     }
 
 
@@ -125,19 +126,38 @@ async def seed_initial_data():
         roles = {
             "SUPER_ADMIN": Role(
                 name="SUPER_ADMIN",
-                description="Full system access - configuration, hardware, policies",
-                permissions={"all": True},
+                description="Full system access - configuration, hardware, policies, dev tools",
+                permissions={"all": True, "dev_tools": True, "system_logs": True},
             ),
             "HR_MANAGER": Role(
                 name="HR_MANAGER",
-                description="Reports, attendance corrections, leave management",
+                description="Reports, attendance corrections, leave management, full system access",
                 permissions={
                     "view_all_attendance": True,
+                    "view_all_employees": True,
+                    "manage_employees": True,
+                    "manage_departments": True,
                     "manage_schedules": True,
                     "approve_leave": True,
                     "approve_corrections": True,
                     "generate_reports": True,
                     "activate_emergency": True,
+                    "view_analytics": True,
+                    "manage_scanners": True,
+                },
+            ),
+            "MANAGER": Role(
+                name="MANAGER",
+                description="Department manager - view and manage own department employees",
+                permissions={
+                    "view_department_attendance": True,
+                    "view_department_employees": True,
+                    "approve_department_leave": True,
+                    "approve_department_corrections": True,
+                    "view_department_analytics": True,
+                    "view_own_attendance": True,
+                    "submit_leave": True,
+                    "submit_corrections": True,
                 },
             ),
             "EMPLOYEE": Role(

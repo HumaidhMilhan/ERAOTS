@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Presence Pulse | Employee Directory</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline": "#946e68",
+                    "secondary-container": "#e2dfde",
+                    "primary": "#b70100",
+                    "inverse-on-surface": "#f0f1f2",
+                    "surface-bright": "#f8f9fa",
+                    "inverse-surface": "#2e3132",
+                    "secondary-fixed-dim": "#c8c6c5",
+                    "primary-fixed-dim": "#ffb4a8",
+                    "inverse-primary": "#ffb4a8",
+                    "on-primary-fixed-variant": "#930100",
+                    "surface": "#f8f9fa",
+                    "tertiary-fixed": "#e4e2e1",
+                    "on-tertiary-container": "#faf8f7",
+                    "tertiary-container": "#727272",
+                    "surface-container": "#edeeef",
+                    "on-secondary-container": "#636262",
+                    "on-secondary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#c8c6c6",
+                    "primary-fixed": "#ffdad4",
+                    "surface-container-low": "#f3f4f5",
+                    "surface-variant": "#e1e3e4",
+                    "on-surface": "#191c1d",
+                    "surface-tint": "#c00000",
+                    "outline-variant": "#e9bcb5",
+                    "surface-container-highest": "#e1e3e4",
+                    "secondary-fixed": "#e5e2e1",
+                    "surface-container-high": "#e7e8e9",
+                    "on-secondary-fixed-variant": "#474746",
+                    "background": "#f8f9fa",
+                    "on-tertiary-fixed": "#1b1c1c",
+                    "on-secondary-fixed": "#1c1b1b",
+                    "on-background": "#191c1d",
+                    "on-primary-fixed": "#410000",
+                    "on-surface-variant": "#5f3f3a",
+                    "on-error": "#ffffff",
+                    "surface-dim": "#d9dadb",
+                    "secondary": "#5f5e5e",
+                    "on-tertiary-fixed-variant": "#474747",
+                    "on-primary-container": "#fff7f5",
+                    "on-tertiary": "#ffffff",
+                    "primary-container": "#e60000",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "tertiary": "#5a5959",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface">
+<!-- Sidebar Navigation (Mapping JSON SideNavBar) -->
+<aside class="h-screen w-64 fixed left-0 top-0 border-r border-zinc-100/10 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-2xl flex flex-col py-8 px-4 z-50">
+<div class="mb-10 px-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white shadow-lg">
+<span class="material-symbols-outlined">pulse_alert</span>
+</div>
+<div>
+<h2 class="font-headline font-bold text-lg tracking-tight">HQ Presence</h2>
+<p class="text-xs text-secondary font-medium">Active: 94%</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-full text-zinc-400 hover:text-zinc-900 transition-all font-manrope text-sm font-semibold tracking-wide" href="#">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-full text-zinc-400 hover:text-zinc-900 transition-all font-manrope text-sm font-semibold tracking-wide" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+                Live Map
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-full text-red-600 bg-red-50/50 dark:bg-red-900/10 border-r-2 border-red-600 font-manrope text-sm font-semibold tracking-wide" href="#">
+<span class="material-symbols-outlined" data-icon="groups" style="font-variation-settings: 'FILL' 1;">groups</span>
+                Employee List
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-full text-zinc-400 hover:text-zinc-900 transition-all font-manrope text-sm font-semibold tracking-wide" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+                Analytics
+            </a>
+</nav>
+<div class="mt-auto px-4 space-y-4">
+<button class="w-full py-3 bg-gradient-to-r from-primary to-primary-container text-white rounded-full font-headline font-bold text-sm shadow-md hover:shadow-xl transition-all active:scale-95 duration-200">
+                Add Member
+            </button>
+<div class="pt-4 border-t border-surface-variant/30 space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-zinc-400 hover:text-zinc-900 transition-all text-sm font-medium" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+                    Help
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-zinc-400 hover:text-zinc-900 transition-all text-sm font-medium" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                    Logout
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen">
+<!-- Top Navigation Bar (Mapping JSON TopNavBar) -->
+<header class="flex justify-between items-center w-full px-8 py-4 sticky top-0 z-40 bg-white/70 backdrop-blur-xl shadow-[0_40px_40px_-5px_rgba(25,28,29,0.06)]">
+<div class="flex items-center gap-8">
+<h1 class="text-xl font-headline font-bold tracking-tighter text-black uppercase">Presence Pulse</h1>
+<div class="relative w-80">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-lg">search</span>
+<input class="w-full bg-zinc-100/50 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Search employee, dept, or status..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-secondary hover:bg-zinc-100/80 rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-secondary hover:bg-zinc-100/80 rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-8 w-px bg-surface-variant/50 mx-2"></div>
+<div class="flex items-center gap-3">
+<img alt="User profile" class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" data-alt="Close-up portrait of a professional man in a light grey suit with soft studio lighting and clean background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZP7mZPXCNWga1uSBjIXLAhL1j4yMTBGLwwsOVDdIJInUDdx_IsI_bgTYbHPpaWvVgokL7_nKQCCfopV0Ty8zRPEsUPeZNPKNXZcEfcN-d1FxNud6jYBLQb8pAPCkdD0ELzeUwAtVSYRd1I12SG01LhXaV7jMHNHZ3RWeYEBAV7xvvfQDB3WFCE6rS9JKOd0JJrC_MMNcAdJPhcDdZJpOTOlfdcD0-faTci47gD8ZSi6yuZe3liVK7WD4X8hgnbDcnmfQGP4SVNYBT"/>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="p-8">
+<!-- Editorial Header -->
+<div class="mb-10 flex justify-between items-end">
+<div>
+<h2 class="text-4xl font-headline font-extrabold text-on-surface tracking-tight mb-2">Employee Directory</h2>
+<p class="text-secondary text-lg font-medium">Real-time presence monitoring across 12 departments.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-5 py-2.5 bg-surface-container-low hover:bg-surface-container-high text-on-surface font-semibold rounded-full transition-all text-sm">
+<span class="material-symbols-outlined text-xl">filter_list</span>
+                        Filters
+                    </button>
+<button class="flex items-center gap-2 px-5 py-2.5 bg-surface-container-low hover:bg-surface-container-high text-on-surface font-semibold rounded-full transition-all text-sm">
+<span class="material-symbols-outlined text-xl">file_download</span>
+                        Export CSV
+                    </button>
+</div>
+</div>
+<!-- Bento-Style Stat Cards (Editorial Layer) -->
+<div class="grid grid-cols-4 gap-6 mb-10">
+<div class="col-span-1 p-6 bg-surface-container-lowest rounded-full flex flex-col items-center justify-center text-center shadow-sm">
+<span class="text-secondary text-xs uppercase font-bold tracking-widest mb-1">On-Site</span>
+<span class="text-4xl font-headline font-extrabold text-primary">142</span>
+</div>
+<div class="col-span-1 p-6 bg-surface-container-lowest rounded-full flex flex-col items-center justify-center text-center shadow-sm">
+<span class="text-secondary text-xs uppercase font-bold tracking-widest mb-1">Remote</span>
+<span class="text-4xl font-headline font-extrabold text-on-surface">54</span>
+</div>
+<div class="col-span-1 p-6 bg-surface-container-lowest rounded-full flex flex-col items-center justify-center text-center shadow-sm">
+<span class="text-secondary text-xs uppercase font-bold tracking-widest mb-1">Away</span>
+<span class="text-4xl font-headline font-extrabold text-secondary">8</span>
+</div>
+<div class="col-span-1 p-6 bg-primary rounded-full flex flex-col items-center justify-center text-center shadow-lg shadow-primary/20">
+<span class="text-white/70 text-xs uppercase font-bold tracking-widest mb-1">Alerts</span>
+<span class="text-4xl font-headline font-extrabold text-white">02</span>
+</div>
+</div>
+<!-- Main Data Table Container -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_40px_80px_-20px_rgba(25,28,29,0.04)]">
+<table class="w-full border-collapse">
+<thead class="bg-surface-container-low/50">
+<tr>
+<th class="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-secondary/70">Employee</th>
+<th class="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-secondary/70">Department</th>
+<th class="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-secondary/70">Status</th>
+<th class="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-secondary/70">Last Seen</th>
+<th class="px-8 py-5 text-right text-xs font-bold uppercase tracking-widest text-secondary/70">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-zinc-50">
+<!-- Row 1: Active/Primary Red Pulse -->
+<tr class="group hover:bg-surface-bright transition-all duration-300">
+<td class="px-8 py-4">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Employee" class="w-12 h-12 rounded-full object-cover" data-alt="Headshot of a smiling young woman with dark wavy hair in a bright studio setting with soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsV6p7wV-P4NmqmPP39BgrcPbWC0_kt-nFLOCLG6sldfdFWMuJ1LrrEGpVA6xMquMbJZsPxMAa7fvvjaEMCvLAvO9Nq6EnrFFHXmYA82n47xNb5sLqGZgZlGHJ3Hmli8lKaf6_LKB8SpMKqYXbGDh8vyYONJcY0w6mITtQheK55SJx1lBZcyDKMmRx8F78KeQXgKKlI1FEhWWx4sYVhAtZxYa7Yw_kUl4j8lXDLy8NmdlBR8K6mERQzFMmn7Nchx0S33HDK4-eLuow"/>
+<div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_8px_rgba(183,1,0,0.4)]"></div>
+</div>
+</div>
+<div>
+<div class="font-headline font-bold text-on-surface">Elena Rodriguez</div>
+<div class="text-xs text-secondary font-medium">elena.r@pulse.io</div>
+</div>
+</div>
+</td>
+<td class="px-8 py-4">
+<span class="text-sm font-medium text-secondary">Creative Direction</span>
+</td>
+<td class="px-8 py-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-tight">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                    ACTIVE NOW
+                                </span>
+</td>
+<td class="px-8 py-4">
+<span class="text-sm text-on-surface font-semibold">Live (Headquarters)</span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="p-2 text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: Inactive/Secondary Grey -->
+<tr class="group hover:bg-surface-bright transition-all duration-300">
+<td class="px-8 py-4">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Employee" class="w-12 h-12 rounded-full object-cover grayscale opacity-80" data-alt="Portrait of a young man with glasses and a short beard, wearing a casual denim shirt against a neutral wall" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDv7otTHYyouUBfqGAE2L89MbIiFFpUthtHNhf5OwaSc-8ncyyvWUrizPsMslGautmOF8ad_-49RODeUK0GXzUigZ6I1pQeattO0jNktc5X5QIC6QbfYqtAeGLXNQjMvPMkm3JqpcJLsvrVPLscviWpUNDCi3A7zDyLEemgSKCGjITqvNPksWGByL7_7k4C6Zc6WqXLeQcXsPspbcyXq_Xw-DZaWFvukpC4lWC9gnEtJHrUISokV_wZWxvgI-DltgcWKUSBxTuH4AJ"/>
+<div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-zinc-300"></div>
+</div>
+</div>
+<div>
+<div class="font-headline font-bold text-on-surface opacity-80">Marcus Thorne</div>
+<div class="text-xs text-secondary font-medium">m.thorne@pulse.io</div>
+</div>
+</div>
+</td>
+<td class="px-8 py-4 text-zinc-400">
+<span class="text-sm font-medium">System Architecture</span>
+</td>
+<td class="px-8 py-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 text-zinc-500 text-xs font-bold tracking-tight">
+                                    OFFLINE
+                                </span>
+</td>
+<td class="px-8 py-4">
+<span class="text-sm text-secondary">2 hours ago (Home Office)</span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="p-2 text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Remote/Primary Tint -->
+<tr class="group hover:bg-surface-bright transition-all duration-300">
+<td class="px-8 py-4">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Employee" class="w-12 h-12 rounded-full object-cover" data-alt="Middle-aged woman with blonde hair and professional attire, soft natural window light reflecting in her eyes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-rnNKYCP4vBk9GZ6__1G_j96rdwh0OGwqRH_wyGv6b50VF_9OQomAUDYWsIwhjOCSJ6rxt625oA8rjJgJ4ngrnup_aDex7hvxwP1C6PdhMdcxF6Ei8l37bJGLK2gbvfECs_d-XbfCKaPL6FjLVcR8UL-JGCLXrpSLBEq8acMRRqGNSRo9m5dTtHetoRdkg8ZC6sLI562V98vdq8B4iP0LsEpYvPW_PFhPotDUEJ08NsFBIDjH81rTByV6LX_a0gzQdXnnaLf99qXE"/>
+<div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-primary/40"></div>
+</div>
+</div>
+<div>
+<div class="font-headline font-bold text-on-surface">Sarah Jenkins</div>
+<div class="text-xs text-secondary font-medium">s.jenkins@pulse.io</div>
+</div>
+</div>
+</td>
+<td class="px-8 py-4">
+<span class="text-sm font-medium text-secondary">Product Management</span>
+</td>
+<td class="px-8 py-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-primary text-xs font-bold tracking-tight">
+                                    REMOTE
+                                </span>
+</td>
+<td class="px-8 py-4">
+<span class="text-sm text-on-surface font-semibold">14 mins ago (London, UK)</span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="p-2 text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Active -->
+<tr class="group hover:bg-surface-bright transition-all duration-300">
+<td class="px-8 py-4">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Employee" class="w-12 h-12 rounded-full object-cover" data-alt="Young man with short dark hair in a black turtleneck, artistic shadow across half his face, studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASCd5N-XsDwARNh73Bd63t5M0psR3_xlYjU9knOc_1PnBt95V7ZNnACx0AJdUHIcjNS9wIb4PrG1sA3nYfzrl2K5iBx9Xznxrkhxe4P6U-TZ52bWir2uIIle1o_SUb3n4c4T_iEQEQ8b_IjrMxf-BwH779cZrwmeHcP1Z5Slk0R3lXzkVoOoquh0WHXUGLthhBYIOj-ap8J719Fi2u_1TE5AbYU-SYzK6MSAxAceRC7FiwZfrGtIkw4rLZxA12VsewOoRQQziiqZhN"/>
+<div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_8px_rgba(183,1,0,0.4)]"></div>
+</div>
+</div>
+<div>
+<div class="font-headline font-bold text-on-surface">David Chen</div>
+<div class="text-xs text-secondary font-medium">d.chen@pulse.io</div>
+</div>
+</div>
+</td>
+<td class="px-8 py-4">
+<span class="text-sm font-medium text-secondary">Global Logistics</span>
+</td>
+<td class="px-8 py-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-tight">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                    ACTIVE NOW
+                                </span>
+</td>
+<td class="px-8 py-4">
+<span class="text-sm text-on-surface font-semibold">Live (Headquarters)</span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="p-2 text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 5: Away/Black badge -->
+<tr class="group hover:bg-surface-bright transition-all duration-300">
+<td class="px-8 py-4">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Employee" class="w-12 h-12 rounded-full object-cover opacity-70" data-alt="Close-up of a woman with freckles and red hair, looking thoughtfully off-camera in a warmly lit library" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANSQl9-usOBOw_pzC8ENHc4igUtgYsfpAwks0hZN6PXYlDj0YJkQlr8Cc3Tp5n4vzHeP_CaA6qBhY_sjXSHhRLRo_N65BpP2B6WUwhOXNcq2LIjImroRkUFbx1SupcYNYlL33R61Noz9NfuJUVMOfQsMPqI0iNFL7g7YWNsEgqftP3zVBWg2RT83oQIOWSDR9lq2VXoWHzBue_Ix4LfT3QDEhq-Gooey-37ROTd5buLxfCbIQqhreoI-2Zs8p0scYcTTja1PG6g5Dv"/>
+<div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-on-surface"></div>
+</div>
+</div>
+<div>
+<div class="font-headline font-bold text-on-surface">Lina Volkov</div>
+<div class="text-xs text-secondary font-medium">l.volkov@pulse.io</div>
+</div>
+</div>
+</td>
+<td class="px-8 py-4">
+<span class="text-sm font-medium text-secondary">Data Analytics</span>
+</td>
+<td class="px-8 py-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-on-surface text-white text-xs font-bold tracking-tight">
+                                    AWAY
+                                </span>
+</td>
+<td class="px-8 py-4">
+<span class="text-sm text-secondary">42 mins ago (Meeting Room B)</span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="p-2 text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Pagination Footer -->
+<div class="bg-surface-container-low/30 px-8 py-6 flex justify-between items-center">
+<p class="text-sm text-secondary font-medium">Showing <span class="text-on-surface font-bold">5</span> of 214 employees</p>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full flex items-center justify-center border border-zinc-200 text-secondary hover:bg-white hover:text-primary transition-all">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center bg-primary text-white shadow-md">
+                            1
+                        </button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center border border-zinc-200 text-secondary hover:bg-white hover:text-primary transition-all">
+                            2
+                        </button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center border border-zinc-200 text-secondary hover:bg-white hover:text-primary transition-all">
+                            3
+                        </button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center border border-zinc-200 text-secondary hover:bg-white hover:text-primary transition-all">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button for Adding New Member (Contextual to Employee List) -->
+<button class="fixed bottom-10 right-10 w-16 h-16 bg-primary text-white rounded-full shadow-[0_20px_50px_rgba(183,1,0,0.3)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50">
+<span class="material-symbols-outlined text-3xl">person_add</span>
+</button>
+</body></html>

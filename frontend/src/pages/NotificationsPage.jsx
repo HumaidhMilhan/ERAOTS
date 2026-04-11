@@ -22,7 +22,7 @@ export default function NotificationsPage() {
   }, []);
 
   const handleMarkRead = async (id, currentStatus) => {
-    if (currentStatus) return; // already read
+    if (currentStatus) return;
     try {
       await notificationsAPI.markRead(id);
       fetchData();
@@ -31,48 +31,78 @@ export default function NotificationsPage() {
     }
   };
 
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'alert': return 'warning';
+      case 'success': return 'check_circle';
+      case 'info': return 'info';
+      default: return 'notifications';
+    }
+  };
+
   return (
-    <div>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Notifications</h1>
-          <p className="page-subtitle">Your recent alerts and system messages.</p>
+    <div className="page-container">
+      {/* Page Header */}
+      <header className="page-header-premium">
+        <div className="page-header-content">
+          <span className="page-header-chip">COMMUNICATIONS</span>
+          <h1 className="page-title-premium">Notifications</h1>
+          <p className="page-subtitle-premium">Your recent alerts and system messages</p>
+        </div>
+      </header>
+
+      {/* Stats Row */}
+      <div className="stats-row">
+        <div className="stat-card-mini">
+          <span className="stat-card-mini-label">Total</span>
+          <span className="stat-card-mini-value">{notifications.length}</span>
+        </div>
+        <div className="stat-card-mini stat-card-mini--accent">
+          <span className="stat-card-mini-label">Unread</span>
+          <span className="stat-card-mini-value">{unreadCount}</span>
         </div>
       </div>
 
-      <div className="card" style={{ maxWidth: '800px' }}>
+      {/* Notifications List */}
+      <div className="notifications-card">
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>
+          <div className="table-loading">
+            <div className="loading-spinner"></div>
+            <span>Loading notifications...</span>
+          </div>
         ) : notifications.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>
-            No notifications yet!
+          <div className="notifications-empty">
+            <span className="material-symbols-outlined">notifications_off</span>
+            <p>No notifications yet</p>
+            <span className="notifications-empty-hint">You're all caught up!</span>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="notifications-list">
             {notifications.map(notif => (
-              <div 
-                key={notif.notification_id} 
+              <div
+                key={notif.notification_id}
+                className={`notification-item ${!notif.is_read ? 'notification-item--unread' : ''}`}
                 onClick={() => handleMarkRead(notif.notification_id, notif.is_read)}
-                style={{ 
-                  padding: '1.5rem', 
-                  borderBottom: '1px solid var(--border)',
-                  borderLeft: notif.is_read ? '4px solid transparent' : '4px solid var(--primary)',
-                  backgroundColor: notif.is_read ? 'transparent' : 'rgba(37, 99, 235, 0.05)',
-                  cursor: notif.is_read ? 'default' : 'pointer',
-                  transition: 'background-color 0.2s ease'
-                }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: notif.is_read ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
-                    {notif.title}
-                  </h3>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
-                    {new Date(notif.created_at).toLocaleString()}
+                <div className="notification-indicator">
+                  <span className={`material-symbols-outlined notification-icon ${!notif.is_read ? 'notification-icon--unread' : ''}`}>
+                    {getNotificationIcon(notif.type)}
                   </span>
                 </div>
-                <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                  {notif.message}
-                </p>
+                <div className="notification-content">
+                  <div className="notification-header">
+                    <h3 className="notification-title">{notif.title}</h3>
+                    <span className="notification-time">
+                      {new Date(notif.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="notification-message">{notif.message}</p>
+                </div>
+                {!notif.is_read && (
+                  <div className="notification-unread-dot"></div>
+                )}
               </div>
             ))}
           </div>

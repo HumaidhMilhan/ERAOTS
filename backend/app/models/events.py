@@ -1,15 +1,23 @@
 """
 Scan event and real-time occupancy state models.
 ScanEvent is IMMUTABLE — the audit log backbone (NFR2).
+
+Hybrid "Away vs On-Desk" Architecture:
+- PendingStateTransition: Tracks 30-second calendar-triggered confirmations
+- EmployeeCalendarSettings: Maps external calendar providers
 """
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import (
-    Column, String, Boolean, DateTime, ForeignKey, Text, Index
+    Column, String, Boolean, DateTime, ForeignKey, Text, Index, Integer
 )
 from app.core.types import GUID, JSONType
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+
+
+# Valid occupancy statuses
+OCCUPANCY_STATUSES = ("OUTSIDE", "ACTIVE", "ON_BREAK", "AWAY", "IN_MEETING")
 
 
 class ScanEvent(Base):
@@ -50,14 +58,23 @@ class OccupancyState(Base):
     """
     Real-time state cache — one row per employee.
     Updated on every valid scan event. Mirrored in Redis for speed (NFR5.6).
+    
+    Hierarchy of Truth for status changes:
+    1. Biometric Scan OUT (Ultimate Priority) - forces OUTSIDE, aborts pending transitions
+    2. Manual Portal Toggle (High Priority) - overrides calendar syncing
+    3. Interactive Calendar Sync (Medium Priority) - 30-second confirmation rule
+    
+    Valid statuses: OUTSIDE, ACTIVE, ON_BREAK, AWAY, IN_MEETING
     """
     __tablename__ = "occupancy_states"
 
     state_id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     employee_id = Column(GUID(), ForeignKey("employees.employee_id"), nullable=False, unique=True)
-    current_status = Column(String(20), nullable=False, default="OUTSIDE")  # ACTIVE, ON_BREAK, AWAY, OUTSIDE
+    current_status = Column(String(20), nullable=False, default="OUTSIDE")  # OUTSIDE, ACTIVE, ON_BREAK, AWAY, IN_MEETING
     last_scan_event_id = Column(GUID(), ForeignKey("scan_events.event_id"), nullable=True)
     last_state_change = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    # Track source of last state change for hierarchy enforcement
+    last_change_source = Column(String(30), nullable=False, default="BIOMETRIC")  # BIOMETRIC, MANUAL, CALENDAR_SYNC
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
@@ -71,3 +88,97 @@ class OccupancyState(Base):
 
     def __repr__(self):
         return f"<OccupancyState employee={self.employee_id} status={self.current_status}>"
+
+
+class PendingStateTransition(Base):
+    """
+    Tracks 30-second calendar-triggered confirmations (The Interceptor).
+    
+    When a synced calendar meeting starts and the employee is IN the building:
+    1. Backend creates a PendingStateTransition with status PENDING
+    2. Employee receives actionable notification with [Cancel] / [Confirm Now]
+    3. After 30 seconds (or user action), transition is executed or aborted
+    
+    The 30-Second Rule:
+    - [Cancel] → status = CANCELLED, employee stays ACTIVE
+    - [Confirm Now] → status = CONFIRMED, employee becomes IN_MEETING
+    - Timeout (30s) → status = AUTO_CONFIRMED, employee becomes IN_MEETING
+    - Biometric OUT → status = ABORTED, employee becomes OUTSIDE
+    """
+    __tablename__ = "pending_state_transitions"
+
+    transition_id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    employee_id = Column(GUID(), ForeignKey("employees.employee_id"), nullable=False)
+    
+    # What triggered this transition
+    trigger_source = Column(String(30), nullable=False)  # CALENDAR_SYNC, MANUAL_REQUEST
+    calendar_event_id = Column(String(255), nullable=True)  # External calendar event ID
+    calendar_event_title = Column(String(500), nullable=True)  # Meeting title for notification
+    
+    # State transition details
+    from_status = Column(String(20), nullable=False)  # Current status when triggered
+    to_status = Column(String(20), nullable=False)  # Target status (e.g., IN_MEETING)
+    
+    # Timing
+    triggered_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    expires_at = Column(DateTime(timezone=True), nullable=False)  # triggered_at + 30 seconds
+    resolved_at = Column(DateTime(timezone=True), nullable=True)  # When action was taken
+    
+    # Resolution
+    status = Column(String(20), nullable=False, default="PENDING")  # PENDING, CONFIRMED, CANCELLED, AUTO_CONFIRMED, ABORTED
+    resolution_source = Column(String(30), nullable=True)  # USER_CONFIRM, USER_CANCEL, TIMEOUT, BIOMETRIC_OUT
+    
+    # Link to the notification sent
+    notification_id = Column(GUID(), ForeignKey("notifications.notification_id"), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    employee = relationship("Employee")
+    notification = relationship("Notification")
+
+    __table_args__ = (
+        Index("ix_pending_transitions_employee_status", "employee_id", "status"),
+        Index("ix_pending_transitions_expires", "expires_at"),
+    )
+
+    def __repr__(self):
+        return f"<PendingStateTransition {self.employee_id} {self.from_status}->{self.to_status} status={self.status}>"
+
+
+class EmployeeCalendarSettings(Base):
+    """
+    Maps external calendar providers for each employee.
+    Supports Google Calendar, Microsoft Outlook, and iCal feeds.
+    """
+    __tablename__ = "employee_calendar_settings"
+
+    settings_id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    employee_id = Column(GUID(), ForeignKey("employees.employee_id"), nullable=False, unique=True)
+    
+    # Calendar provider configuration
+    provider = Column(String(30), nullable=False)  # GOOGLE, MICROSOFT, ICAL, NONE
+    is_enabled = Column(Boolean, nullable=False, default=True)
+    
+    # OAuth tokens (encrypted in production)
+    access_token = Column(Text, nullable=True)
+    refresh_token = Column(Text, nullable=True)
+    token_expires_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # For iCal feeds
+    ical_url = Column(String(1000), nullable=True)
+    
+    # Sync settings
+    sync_enabled = Column(Boolean, nullable=False, default=True)
+    auto_transition_enabled = Column(Boolean, nullable=False, default=True)  # Enable 30-sec rule
+    last_sync_at = Column(DateTime(timezone=True), nullable=True)
+    sync_error = Column(Text, nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    employee = relationship("Employee")
+
+    def __repr__(self):
+        return f"<EmployeeCalendarSettings employee={self.employee_id} provider={self.provider}>"

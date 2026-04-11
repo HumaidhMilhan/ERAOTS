@@ -2,10 +2,15 @@
 Hardware Scanner Simulator.
 Generates realistic scan events for development and testing.
 Sends events to the ERAOTS API just like real hardware would.
+
+Configuration:
+    Set API_URL environment variable to override default localhost:8000
+    Example: API_URL=http://api.example.com:8000 python -m simulator.simulator
 """
 import httpx
 import asyncio
 import random
+import os
 from datetime import datetime, timezone
 from typing import List, Dict
 import logging
@@ -14,7 +19,8 @@ import argparse
 logger = logging.getLogger("simulator")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s")
 
-API_BASE = "http://localhost:8000"
+# Use environment variable for API URL, fallback to localhost
+API_BASE = os.environ.get("API_URL", "http://localhost:8000")
 
 # Sample employee fingerprints for simulation
 SAMPLE_EMPLOYEES = [

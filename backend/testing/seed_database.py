@@ -36,6 +36,7 @@ async def test():
             await db.flush()
             print("    3 roles created")
             
+            # Admin account
             admin = Employee(
                 first_name="System", last_name="Admin", email="admin@eraots.com",
                 fingerprint_hash=hash_fingerprint("ADMIN-FP-001"), status="ACTIVE",
@@ -50,7 +51,24 @@ async def test():
             )
             db.add(admin_account)
             await db.flush()
-            print("    Admin account created")
+            print("    Admin account created (admin@eraots.com / admin123)")
+            
+            # Demo Employee account with login access
+            demo_employee = Employee(
+                first_name="Demo", last_name="Employee", email="employee@eraots.com",
+                fingerprint_hash=hash_fingerprint("DEMO-FP-001"), status="ACTIVE",
+            )
+            db.add(demo_employee)
+            await db.flush()
+            print(f"    Demo Employee: {demo_employee.employee_id}")
+            
+            employee_account = UserAccount(
+                employee_id=demo_employee.employee_id, email="employee@eraots.com",
+                password_hash=hash_password("employee123"), role_id=roles["EMPLOYEE"].role_id,
+            )
+            db.add(employee_account)
+            await db.flush()
+            print("    Employee account created (employee@eraots.com / employee123)")
             
             scanner_ids = []
             for name, door in [("Scanner Alpha", "Main Entrance"), ("Scanner Beta", "Side Entry")]:
@@ -66,12 +84,16 @@ async def test():
             print("[3] Seed complete!")
             print()
             print("=" * 50)
+            print("  Login Credentials:")
+            print("    Admin:    admin@eraots.com / admin123")
+            print("    Employee: employee@eraots.com / employee123")
+            print()
             print("  Scanner IDs for simulator:")
             for sid in scanner_ids:
                 print(f"    {sid}")
             print("=" * 50)
             
-            print("[3] Adding mock employees for simulator...")
+            print("[4] Adding mock employees for simulator...")
             SAMPLE_EMPLOYEES = [
                 {"name": "Alice Johnson", "fp": "FP-001"},
                 {"name": "Bob Smith", "fp": "FP-002"},
@@ -89,7 +111,7 @@ async def test():
                 db.add(e)
             
             await db.commit()
-            print("[4] Seed complete!")
+            print("[5] Mock employees added!")
             
         except Exception:
             await db.rollback()
