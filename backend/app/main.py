@@ -9,8 +9,7 @@ import logging
 
 from app.core.config import settings as app_settings
 from app.core.database import create_tables
-from app.api import auth, events, employees, attendance, schedules, corrections, notifications, emergency, scanners, settings, reports
-
+from app.api import auth, events, employees, attendance, schedules, corrections, notifications, emergency, scanners, settings, reports, hardware
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -40,6 +39,20 @@ async def lifespan(app: FastAPI):
         # Seed initial data
         await seed_initial_data()
     except Exception as e:
+             # Start background health monitoring scheduler
+        try:
+            from app.core.tasks import start_health_monitoring_scheduler
+            scheduler = await start_health_monitoring_scheduler()
+      # Shutdown
+    # Stop the scheduler if it's running
+    if hasattr(app.state, 'health_scheduler') and app.state.health_scheduler:
+        app.state.health_scheduler.shutdown()
+        logger.info("Health monitoring scheduler stopped")
+            if scheduler:
+                # Store in app state so we can stop it on shutdown
+                app.state.health_scheduler = scheduler
+        except Exception as e:
+            logger.warning(f"Health monitoring scheduler not available: {e}")   
         logger.error(f"Database initialization failed: {e}")
         logger.warning("Server starting without database — some features will be unavailable")
     
@@ -81,6 +94,7 @@ app.include_router(scanners.router)
 app.include_router(settings.router)
 app.include_router(reports.router)
 
+app.include_router(hardware.router)
 
 @app.get("/", tags=["Health"])
 async def root():
