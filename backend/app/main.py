@@ -2,6 +2,8 @@
 ERAOTS — FastAPI Application Entry Point.
 Enterprise Real-Time Attendance & Occupancy Tracking System.
 """
+from sched import scheduler
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -40,7 +42,7 @@ async def lifespan(app: FastAPI):
         await seed_initial_data()
     except Exception as e:
              # Start background health monitoring scheduler
-        try:
+    try:
             from app.core.tasks import start_health_monitoring_scheduler
             scheduler = await start_health_monitoring_scheduler()
       # Shutdown
@@ -48,13 +50,14 @@ async def lifespan(app: FastAPI):
     if hasattr(app.state, 'health_scheduler') and app.state.health_scheduler:
         app.state.health_scheduler.shutdown()
         logger.info("Health monitoring scheduler stopped")
-            if scheduler:
+    if scheduler:
                 # Store in app state so we can stop it on shutdown
                 app.state.health_scheduler = scheduler
-        except Exception as e:
-            logger.warning(f"Health monitoring scheduler not available: {e}")   
-        logger.error(f"Database initialization failed: {e}")
-        logger.warning("Server starting without database — some features will be unavailable")
+    except Exception as e:
+    
+    logger.warning(f"Health monitoring scheduler not available: {e}")   
+    logger.error(f"Database initialization failed: {e}")
+    logger.warning("Server starting without database — some features will be unavailable")
     
     yield
     
