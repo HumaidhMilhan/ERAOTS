@@ -2,19 +2,63 @@ import { useState, useEffect } from 'react';
 import { emergencyAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
+const SAFETY_PROMPT_TEXT = 'Are you safe?';
+
+/** Matches backend EmergencySafetyCheck.status → user-facing labels */
+function safetyStatusLabel(status) {
+  switch (status) {
+    case 'SAFE':
+      return 'Safe employee';
+    case 'IN_DANGER':
+      return 'In danger';
+    case 'PENDING':
+      return 'Awaiting response';
+    default:
+      return status;
+  }
+}
+
 export default function EmergencyPage() {
   const { user } = useAuth();
   const [activeEmergency, setActiveEmergency] = useState(null);
+  const [mySafety, setMySafety] = useState(null);
+  const [responding, setResponding] = useState(false);
   const [emergencyHistory, setEmergencyHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [safetySummary, setSafetySummary] = useState(null);
+
+  const isAdminRole = user?.role === 'SUPER_ADMIN' || user?.role === 'HR_MANAGER';
 
   useEffect(() => {
     fetchActive();
+    fetchMySafety();
     const interval = setInterval(fetchActive, 5000);
-    return () => clearInterval(interval);
+    const interval2 = setInterval(fetchMySafety, 5000);
+    return () => {
+      clearInterval(interval);
+      clearInterval(interval2);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!isAdminRole || !activeEmergency?.emergency_id) {
+      setSafetySummary(null);
+      return;
+    }
+    const load = async () => {
+      try {
+        const res = await emergencyAPI.listActiveSafety();
+        setSafetySummary(res.data);
+      } catch (err) {
+        console.error('Failed to load safety check summary', err);
+      }
+    };
+    load();
+    const interval = setInterval(load, 5000);
+    return () => clearInterval(interval);
+  }, [isAdminRole, activeEmergency?.emergency_id]);
 
   const fetchActive = async () => {
     try {
@@ -24,6 +68,15 @@ export default function EmergencyPage() {
       console.error("Failed to fetch emergency state", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMySafety = async () => {
+    try {
+      const res = await emergencyAPI.getMySafety();
+      setMySafety(res.data);
+    } catch (err) {
+      // ignore if not logged in / endpoint unavailable
     }
   };
 
@@ -67,6 +120,16 @@ export default function EmergencyPage() {
     }
   };
 
+  const handleBroadcastSafety = async () => {
+    if (!window.confirm('Send "Are you safe?" prompt to employees now?')) return;
+    try {
+      await emergencyAPI.broadcastSafety();
+      alert('Safety check sent.');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to send safety check');
+    }
+  };
+
   const handleAccountFor = async (headcountId) => {
     try {
       await emergencyAPI.markAccounted(headcountId);
@@ -92,9 +155,23 @@ export default function EmergencyPage() {
     );
   }
 
-  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'HR_MANAGER';
+  const isAdmin = isAdminRole;
   const missingCount = activeEmergency?.headcount_entries?.filter(e => !e.accounted_for).length || 0;
   const safeCount = activeEmergency?.headcount_entries?.filter(e => e.accounted_for).length || 0;
+  const showSafetyPrompt = !!activeEmergency && !isAdmin && mySafety && mySafety.status === 'PENDING';
+  const showSafetyResolved = !!activeEmergency && !isAdmin && mySafety && mySafety.status !== 'PENDING';
+
+  const handleSafetyResponse = async (response) => {
+    try {
+      setResponding(true);
+      await emergencyAPI.respondMySafety(response);
+      await fetchMySafety();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to send response');
+    } finally {
+      setResponding(false);
+    }
+  };
 
   return (
     <div className="page-container">
@@ -199,12 +276,119 @@ export default function EmergencyPage() {
               </div>
             </div>
             {isAdmin && (
-              <button className="btn btn-ghost btn-resolve" onClick={handleResolve}>
-                <span className="material-symbols-outlined">check_circle</span>
-                Resolve Emergency
-              </button>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button className="btn btn-danger" onClick={handleBroadcastSafety}>
+                  <span className="material-symbols-outlined">campaign</span>
+                  Send Safety Check
+                </button>
+                <button className="btn btn-ghost btn-resolve" onClick={handleResolve}>
+                  <span className="material-symbols-outlined">check_circle</span>
+                  Resolve Emergency
+                </button>
+              </div>
             )}
           </div>
+
+          {/* Admin: who responded safe vs in danger (from notification / safety check) */}
+          {isAdmin && safetySummary && (
+            <div className="emergency-history-panel" style={{ marginTop: 16 }}>
+              <div className="emergency-history-header">
+                <span className="material-symbols-outlined">shield_with_heart</span>
+                <h3>Safety check responses</h3>
+              </div>
+              <div style={{ padding: '12px 16px', display: 'flex', gap: 16, flexWrap: 'wrap', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <span><strong>{safetySummary.safe_count}</strong> safe</span>
+                <span><strong>{safetySummary.in_danger_count}</strong> in danger</span>
+                <span><strong>{safetySummary.pending_count}</strong> awaiting</span>
+              </div>
+              <div className="table-wrapper" style={{ marginTop: 0 }}>
+                <table className="premium-table">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Mark</th>
+                      <th>Answer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {safetySummary.entries?.map((row) => (
+                      <tr
+                        key={row.employee_id}
+                        className={
+                          row.status === 'SAFE'
+                            ? 'emergency-row-safe'
+                            : row.status === 'IN_DANGER'
+                              ? 'emergency-row-missing'
+                              : ''
+                        }
+                      >
+                        <td><span className="table-cell-name">{row.employee_name || '—'}</span></td>
+                        <td>
+                          <span className={row.status === 'SAFE' ? 'safe-badge' : row.status === 'IN_DANGER' ? 'status-chip status-chip--danger' : 'status-chip'}>
+                            {safetyStatusLabel(row.status)}
+                          </span>
+                        </td>
+                        <td>
+                          {row.response === 'YES' ? 'Yes' : row.response === 'NO' ? 'No' : row.status === 'PENDING' ? '—' : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Employee Safety Prompt */}
+          {showSafetyPrompt && (
+            <div className="emergency-history-panel" style={{ marginTop: 16 }}>
+              <div className="emergency-history-header">
+                <span className="material-symbols-outlined">report</span>
+                <h3>Safety Check</h3>
+              </div>
+              <div style={{ padding: 16, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>{SAFETY_PROMPT_TEXT}</div>
+                  <div style={{ opacity: 0.8, fontSize: 13 }}>
+                    Please respond now. No response will be treated as <b>in danger</b>.
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button className="btn btn-success" disabled={responding} onClick={() => handleSafetyResponse('YES')}>
+                    <span className="material-symbols-outlined">check_circle</span>
+                    Yes
+                  </button>
+                  <button className="btn btn-danger" disabled={responding} onClick={() => handleSafetyResponse('NO')}>
+                    <span className="material-symbols-outlined">dangerous</span>
+                    No
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showSafetyResolved && (
+            <div className="emergency-history-panel" style={{ marginTop: 16 }}>
+              <div className="emergency-history-header">
+                <span className="material-symbols-outlined">verified_user</span>
+                <h3>Your Safety Status</h3>
+              </div>
+              <div style={{ padding: 16, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                    {safetyStatusLabel(mySafety.status)}
+                  </div>
+                  <div style={{ opacity: 0.8, fontSize: 13 }}>
+                    {mySafety.response
+                      ? `You answered: ${mySafety.response === 'YES' ? 'Yes' : 'No'}`
+                      : mySafety.status === 'IN_DANGER'
+                        ? 'No response in time or you answered No'
+                        : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Stats Grid */}
           <div className="emergency-stats">

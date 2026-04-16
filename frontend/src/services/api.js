@@ -138,7 +138,11 @@ export const emergencyAPI = {
   getHistory: () => api.get('/api/emergency/'),
   trigger: (data) => api.post('/api/emergency/trigger', data),
   resolve: (id) => api.put(`/api/emergency/${id}/resolve`),
-  markAccounted: (headcountId) => api.put(`/api/emergency/headcount/${headcountId}/account`)
+  markAccounted: (headcountId) => api.put(`/api/emergency/headcount/${headcountId}/account`),
+  getMySafety: () => api.get('/api/emergency/active/my-safety'),
+  respondMySafety: (response) => api.post('/api/emergency/active/respond', { response }),
+  listActiveSafety: () => api.get('/api/emergency/active/safety'),
+  broadcastSafety: () => api.post('/api/emergency/active/broadcast-safety'),
 };
 
 // ==================== HARDWARE SCANNERS ====================

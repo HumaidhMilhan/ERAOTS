@@ -146,9 +146,7 @@ function App() {
                 </RoleRoute>
               } />
               <Route path="emergency" element={
-                <RoleRoute allowedRoles={['HR_MANAGER', 'SUPER_ADMIN']}>
-                  <EmergencyPage />
-                </RoleRoute>
+                <EmergencyPage />
               } />
               <Route path="analytics" element={
                 <RoleRoute allowedRoles={['HR_MANAGER', 'SUPER_ADMIN']}>

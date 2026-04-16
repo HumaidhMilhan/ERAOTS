@@ -33,7 +33,9 @@ const allNavItems = [
   { to: '/schedules', label: 'Schedules', icon: 'calendar_month', roles: ['HR_MANAGER', 'SUPER_ADMIN'] },
   { to: '/corrections', label: 'Corrections', icon: 'edit_note', roles: ['HR_MANAGER', 'SUPER_ADMIN'] },
   { to: '/scanners', label: 'Scanners', icon: 'sensors', roles: ['HR_MANAGER', 'SUPER_ADMIN'] },
-  { to: '/emergency', label: 'Emergency', icon: 'emergency', roles: ['HR_MANAGER', 'SUPER_ADMIN'] },
+  // Emergency page is visible to everyone (employee safety prompt lives here).
+  // Admin actions inside are still role-gated server-side.
+  { to: '/emergency', label: 'Emergency', icon: 'emergency', roles: ['EMPLOYEE', 'MANAGER', 'HR_MANAGER', 'SUPER_ADMIN'] },
   { to: '/analytics', label: 'Analytics', icon: 'monitoring', roles: ['HR_MANAGER', 'SUPER_ADMIN'] },
   { to: '/settings', label: 'Settings', icon: 'tune', roles: ['HR_MANAGER', 'SUPER_ADMIN'] },
   

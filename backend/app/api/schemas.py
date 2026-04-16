@@ -294,9 +294,41 @@ class EmergencyEventResponse(BaseModel):
     notes: Optional[str] = None
     status: str
     headcount_entries: List[EmergencyHeadcountResponse] = []
+    safety_check_timeout_seconds: Optional[int] = None
 
     class Config:
         from_attributes = True
+
+
+class EmergencySafetyCheckMyStatus(BaseModel):
+    emergency_id: UUID
+    employee_id: UUID
+    status: str  # PENDING, SAFE, IN_DANGER
+    response: Optional[str] = None  # YES, NO
+    expires_at: datetime
+    responded_at: Optional[datetime] = None
+    prompt_message: str
+
+
+class EmergencySafetyCheckEntry(BaseModel):
+    employee_id: UUID
+    employee_name: Optional[str] = None
+    status: str  # PENDING, SAFE, IN_DANGER
+    response: Optional[str] = None  # YES, NO
+    responded_at: Optional[datetime] = None
+
+
+class EmergencySafetyCheckListResponse(BaseModel):
+    emergency_id: UUID
+    total: int
+    safe_count: int
+    in_danger_count: int
+    pending_count: int
+    entries: List[EmergencySafetyCheckEntry]
+
+
+class EmergencySafetyRespondRequest(BaseModel):
+    response: str = Field(..., description="YES or NO")
 
 # ==================== PHASE D: SYSTEM SETTINGS ====================
 

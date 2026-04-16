@@ -18,6 +18,7 @@ from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.models.events import OccupancyState, StatusLog, PendingStateTransition
 from app.models.notifications import Notification
+from app.models.emergency import EmergencyEvent, EmergencySafetyCheck
 from app.core.calendar_sync import poll_all_calendars
 from app.core.jira_sync import sync_all_jira_productivity
 
@@ -238,6 +239,49 @@ async def process_expired_transitions(db: AsyncSession) -> int:
     return auto_confirmed
 
 
+async def process_expired_emergency_safety_checks(db: AsyncSession) -> int:
+    """
+    Emergency safety prompt rule:
+    - If employee does not respond before expires_at -> mark IN_DANGER.
+    """
+    now = datetime.now(timezone.utc)
+    active = (await db.execute(
+        select(EmergencyEvent).where(EmergencyEvent.status == "ACTIVE")
+    )).scalar_one_or_none()
+    if not active:
+        return 0
+
+    result = await db.execute(
+        select(EmergencySafetyCheck).where(
+            and_(
+                EmergencySafetyCheck.emergency_id == active.emergency_id,
+                EmergencySafetyCheck.status == "PENDING",
+                EmergencySafetyCheck.expires_at <= now,
+            )
+        )
+    )
+    expired = result.scalars().all()
+    if not expired:
+        return 0
+
+    for row in expired:
+        row.status = "IN_DANGER"
+        row.responded_at = now
+        row.response = None
+
+        if row.notification_id:
+            notif = (await db.execute(
+                select(Notification).where(Notification.notification_id == row.notification_id)
+            )).scalar_one_or_none()
+            if notif:
+                notif.action_taken = "TIMEOUT"
+                notif.action_taken_at = now
+
+    await db.commit()
+    logger.info(f"Emergency safety timeout: marked {len(expired)} employee(s) as IN_DANGER")
+    return len(expired)
+
+
 async def run_scheduler():
     """
     Main scheduler loop — runs all periodic tasks every SCHEDULER_INTERVAL_SECONDS.
@@ -260,6 +304,9 @@ async def run_scheduler():
 
                 # Job 3: Auto-confirm expired meeting transitions
                 await process_expired_transitions(db)
+
+                # Job 3b: Emergency safety checks timeout -> IN_DANGER
+                await process_expired_emergency_safety_checks(db)
                 
                 # Job 4: Poll Google Calendars for upcoming meetings
                 # To avoid hitting API rate limits, we poll every 2 minutes (every other scheduler loop)
