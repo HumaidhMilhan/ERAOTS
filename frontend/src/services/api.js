@@ -203,42 +203,28 @@ export const correctionsAPI = {
 
 // ==================== NOTIFICATIONS ====================
 export const notificationsAPI = {
-  // Added params support for filtering (e.g., ?status=unread)
   list: (params) => api.get("/api/notifications", { params }),
-  
-  // Using template literals correctly
   markRead: (id) => api.patch(`/api/notifications/${id}/read`),
-  
   markAllRead: () => api.patch("/api/notifications/read-all"),
-  
   getUnreadCount: () => api.get("/api/notifications/unread-count"),
-  
   getPreferences: () => api.get("/api/notifications/preferences"),
-  
   updatePreferences: (data) => api.put("/api/notifications/preferences", data),
-  
   getAnalytics: () => api.get("/api/notifications/analytics"),
 };
 
 // ==================== MEETINGS ====================
 export const meetingsAPI = {
-  // Ensure data includes: { title, startTime, audienceIds }
   create: (data) => api.post("/api/meetings", data),
-  
-  // Added params so you can filter past/upcoming meetings
-  list: (params) => api.get("/api/meetings", { params }),
-  
+  list: () => api.get("/api/meetings"),
   delete: (id) => api.delete(`/api/meetings/${id}`),
 };
 
 // ==================== ANNOUNCEMENTS ====================
 export const announcementsAPI = {
-  // Ensure data includes: { content, targetAudience, scheduleDate }
   create: (data) => api.post("/api/announcements", data),
-  
-  // Added params for filtering by category or date
-  list: (params) => api.get("/api/announcements", { params }),
+  list: () => api.get("/api/announcements"),
 };
+
 // ==================== EMERGENCY ====================
 export const emergencyAPI = {
   getActive: () => api.get("/api/emergency/active"),
