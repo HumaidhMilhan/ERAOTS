@@ -12,6 +12,7 @@ export default function ScheduleHubPage() {
         key: 'personal',
         label: 'My Schedule',
         subtitle: 'Personal schedule and leave management',
+        icon: 'person',
         show: true,
         render: () => <MySchedulePage />,
       },
@@ -19,6 +20,7 @@ export default function ScheduleHubPage() {
         key: 'team',
         label: 'Team Scheduling',
         subtitle: 'Manager leave and schedule tracking',
+        icon: 'group',
         show: isManager && !isAdmin,
         render: () => <SchedulesPage departmentScoped />,
       },
@@ -26,6 +28,7 @@ export default function ScheduleHubPage() {
         key: 'org',
         label: 'Organization Scheduling',
         subtitle: 'Company schedule and leave governance for HR/Admin',
+        icon: 'corporate_fare',
         show: isAdmin,
         render: () => <SchedulesPage />,
       },
@@ -46,7 +49,7 @@ export default function ScheduleHubPage() {
     <div className="hub-shell">
       <header className="hub-shell-header">
         <div>
-          <span className="hub-shell-chip">FR8 LEAVE & SCHEDULE MANAGEMENT</span>
+          <span className="hub-shell-chip">FR8 LEAVE &amp; SCHEDULE MANAGEMENT</span>
           <h1 className="hub-shell-title">Schedule Hub</h1>
           <p className="hub-shell-subtitle">
             {isEmployee
@@ -54,7 +57,9 @@ export default function ScheduleHubPage() {
               : 'Unified leave operations for personal, team, and organization views'}
           </p>
         </div>
+        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', opacity: 0.35 }}>calendar_month</span>
       </header>
+
 
       {tabs.length > 1 && (
         <section className="hub-tabs" aria-label="Schedule views">
@@ -65,6 +70,7 @@ export default function ScheduleHubPage() {
               onClick={() => setActiveTab(tab.key)}
               type="button"
             >
+              {tab.icon && <span className="material-symbols-outlined" style={{ fontSize: '1rem', verticalAlign: 'middle' }}>{tab.icon}</span>}
               <span className="hub-tab-label">{tab.label}</span>
             </button>
           ))}

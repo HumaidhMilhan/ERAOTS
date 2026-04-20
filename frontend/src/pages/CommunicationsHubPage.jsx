@@ -17,6 +17,7 @@ export default function CommunicationsHubPage() {
         key: 'alerts',
         label: 'Notification Center',
         subtitle: 'Real-time alerts, priorities, and notification history',
+        icon: 'notifications',
         show: true,
         render: () => <NotificationCenter />,
       },
@@ -24,6 +25,7 @@ export default function CommunicationsHubPage() {
         key: 'prefs',
         label: 'Notification Settings',
         subtitle: 'Channels, thresholds, and suppression preferences',
+        icon: 'tune',
         show: true,
         render: () => <NotificationSettings />,
       },
@@ -31,6 +33,7 @@ export default function CommunicationsHubPage() {
         key: 'announcements',
         label: 'Announcements',
         subtitle: 'Company communication stream with role-aware publishing',
+        icon: 'campaign',
         show: true,
         render: () => <Announcements />,
       },
@@ -38,6 +41,7 @@ export default function CommunicationsHubPage() {
         key: 'meetings',
         label: 'Meeting Alerts',
         subtitle: 'Scheduled meeting notifications and reminders',
+        icon: 'event',
         show: isAdmin,
         render: () => <MeetingAlerts />,
       },
@@ -56,12 +60,13 @@ export default function CommunicationsHubPage() {
     <div className="hub-shell">
       <header className="hub-shell-header">
         <div>
-          <span className="hub-shell-chip">FR6 NOTIFICATION & ALERT ENGINE</span>
+          <span className="hub-shell-chip">FR6 NOTIFICATION &amp; ALERT ENGINE</span>
           <h1 className="hub-shell-title">Communications Hub</h1>
           <p className="hub-shell-subtitle">
             Unified notification, announcement, and meeting communication center
           </p>
         </div>
+        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', opacity: 0.35 }}>notifications</span>
       </header>
 
       {tabs.length > 1 && (
@@ -73,6 +78,7 @@ export default function CommunicationsHubPage() {
               onClick={() => setActiveTab(tab.key)}
               type="button"
             >
+              {tab.icon && <span className="material-symbols-outlined" style={{ fontSize: '1rem', verticalAlign: 'middle' }}>{tab.icon}</span>}
               <span className="hub-tab-label">{tab.label}</span>
             </button>
           ))}

@@ -21,6 +21,7 @@ export default function InsightsHubPage() {
         key: 'personal',
         label: 'Personal Insights',
         subtitle: 'Individual attendance intelligence and punctuality trends',
+        icon: 'person',
         show: true,
         render: () => <PersonalInsightsPage />,
       },
@@ -28,6 +29,7 @@ export default function InsightsHubPage() {
         key: 'team',
         label: 'Team Insights',
         subtitle: 'Manager-level coverage and anomalies',
+        icon: 'group',
         show: isManager,
         render: () => <TeamPage />,
       },
@@ -35,6 +37,7 @@ export default function InsightsHubPage() {
         key: 'analytics',
         label: 'Analytics Reports',
         subtitle: 'Attendance exports and high-level charts',
+        icon: 'bar_chart',
         show: isAdmin,
         render: () => <AnalyticsPage />,
       },
@@ -42,6 +45,7 @@ export default function InsightsHubPage() {
         key: 'company',
         label: 'Company Intelligence',
         subtitle: 'Organization-wide workforce behavior insights',
+        icon: 'corporate_fare',
         show: isAdmin,
         render: () => <CompanyInsightsPage />,
       },
@@ -49,6 +53,7 @@ export default function InsightsHubPage() {
         key: 'system',
         label: 'System Intelligence',
         subtitle: 'Operational and security telemetry for super admins',
+        icon: 'monitor_heart',
         show: isSuperAdmin,
         render: () => <SystemInsightsPage />,
       },
@@ -67,12 +72,13 @@ export default function InsightsHubPage() {
     <div className="hub-shell">
       <header className="hub-shell-header">
         <div>
-          <span className="hub-shell-chip">FR12 ANALYTICS & INSIGHTS</span>
+          <span className="hub-shell-chip">FR12 ANALYTICS &amp; INSIGHTS</span>
           <h1 className="hub-shell-title">Insights Hub</h1>
           <p className="hub-shell-subtitle">
             Consolidated analytics workspace with strict role-scoped visibility
           </p>
         </div>
+        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', opacity: 0.35 }}>monitoring</span>
       </header>
 
       {tabs.length > 1 && (
@@ -84,6 +90,7 @@ export default function InsightsHubPage() {
               onClick={() => setActiveTab(tab.key)}
               type="button"
             >
+              {tab.icon && <span className="material-symbols-outlined" style={{ fontSize: '1rem', verticalAlign: 'middle' }}>{tab.icon}</span>}
               <span className="hub-tab-label">{tab.label}</span>
             </button>
           ))}

@@ -9,12 +9,14 @@ export default function DirectoryHubPage() {
         key: 'employees',
         label: 'Employee Directory',
         subtitle: 'Profiles, roles, and active status management',
+        icon: 'person',
         render: () => <EmployeesPage />,
       },
       {
         key: 'departments',
         label: 'Department Registry',
         subtitle: 'Organizational units, headcount, and team structure',
+        icon: 'corporate_fare',
         render: () => <DepartmentsPage />,
       },
     ],
@@ -41,6 +43,7 @@ export default function DirectoryHubPage() {
             Unified desktop workspace for employee and department administration
           </p>
         </div>
+        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', opacity: 0.35 }}>groups</span>
       </header>
 
       <section className="hub-tabs" aria-label="Directory views">
@@ -51,6 +54,7 @@ export default function DirectoryHubPage() {
             onClick={() => setActiveTab(tab.key)}
             type="button"
           >
+            {tab.icon && <span className="material-symbols-outlined" style={{ fontSize: '1rem', verticalAlign: 'middle' }}>{tab.icon}</span>}
             <span className="hub-tab-label">{tab.label}</span>
           </button>
         ))}

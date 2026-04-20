@@ -18,6 +18,7 @@ export default function CorrectionsHubPage() {
         key: 'request',
         label: 'Submit Request',
         subtitle: 'File a correction for missed or erroneous scans',
+        icon: 'edit_note',
         show: true,
         render: () => <CorrectionFormPage />,
       },
@@ -25,6 +26,7 @@ export default function CorrectionsHubPage() {
         key: 'mine',
         label: 'My Requests',
         subtitle: 'Track correction workflow progress and comments',
+        icon: 'receipt_long',
         show: true,
         render: () => <MyCorrectionsPage />,
       },
@@ -32,6 +34,7 @@ export default function CorrectionsHubPage() {
         key: 'manager',
         label: 'Manager Queue',
         subtitle: 'Manager review stage for pending team corrections',
+        icon: 'manage_accounts',
         show: isManager || isAdmin,
         render: () => <ManagerApprovalPage />,
       },
@@ -39,6 +42,7 @@ export default function CorrectionsHubPage() {
         key: 'hr',
         label: 'HR Queue',
         subtitle: 'Final HR approval and rejection stage',
+        icon: 'verified',
         show: isAdmin,
         render: () => <HRApprovalPage />,
       },
@@ -63,6 +67,7 @@ export default function CorrectionsHubPage() {
             End-to-end attendance correction workflow with role-aware queues
           </p>
         </div>
+        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', opacity: 0.35 }}>edit_note</span>
       </header>
 
       {tabs.length > 1 && (
@@ -74,6 +79,7 @@ export default function CorrectionsHubPage() {
               onClick={() => setActiveTab(tab.key)}
               type="button"
             >
+              {tab.icon && <span className="material-symbols-outlined" style={{ fontSize: '1rem', verticalAlign: 'middle' }}>{tab.icon}</span>}
               <span className="hub-tab-label">{tab.label}</span>
             </button>
           ))}
