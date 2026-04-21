@@ -12,6 +12,7 @@ export default function AttendanceHubPage() {
         key: 'personal',
         label: 'My Attendance',
         subtitle: 'Personal timeline, hours, and attendance trend',
+        icon: 'person',
         show: true,
         render: () => <MyAttendancePage />,
       },
@@ -19,6 +20,7 @@ export default function AttendanceHubPage() {
         key: 'team',
         label: 'Team Attendance',
         subtitle: 'Department scoped attendance operations for managers',
+        icon: 'group',
         show: isManager && !isAdmin,
         render: () => <AttendancePage departmentScoped />,
       },
@@ -26,6 +28,7 @@ export default function AttendanceHubPage() {
         key: 'org',
         label: 'Organization Attendance',
         subtitle: 'Company-wide attendance processing and exports',
+        icon: 'corporate_fare',
         show: isAdmin,
         render: () => <AttendancePage />,
       },
@@ -54,6 +57,7 @@ export default function AttendanceHubPage() {
               : 'Role-aware attendance operations with shared workflow design'}
           </p>
         </div>
+        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', opacity: 0.35 }}>event_available</span>
       </header>
 
       {tabs.length > 1 && (
@@ -65,6 +69,7 @@ export default function AttendanceHubPage() {
               onClick={() => setActiveTab(tab.key)}
               type="button"
             >
+              {tab.icon && <span className="material-symbols-outlined" style={{ fontSize: '1rem', verticalAlign: 'middle' }}>{tab.icon}</span>}
               <span className="hub-tab-label">{tab.label}</span>
             </button>
           ))}

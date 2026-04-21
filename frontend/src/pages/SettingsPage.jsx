@@ -1,48 +1,65 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { settingsAPI, departmentAPI } from '../services/api';
-import { useUIFeedback } from '../context/UIFeedbackContext';
-import { TableSkeleton, EmptyStateStandard, ErrorStateStandard } from '../components/DataStates';
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { settingsAPI, departmentAPI } from "../services/api";
+import { useUIFeedback } from "../context/UIFeedbackContext";
+import {
+  TableSkeleton,
+  EmptyStateStandard,
+  ErrorStateStandard,
+} from "../components/DataStates";
 
 const ROLE_LABELS = {
-  SUPER_ADMIN: 'Super Admin',
-  HR_MANAGER: 'HR Manager',
-  MANAGER: 'Department Manager',
-  EMPLOYEE: 'Employee',
+  SUPER_ADMIN: "Super Admin",
+  HR_MANAGER: "HR Manager",
+  MANAGER: "Department Manager",
+  EMPLOYEE: "Employee",
 };
+
+const formatPolicyParamLabel = (valueKey) =>
+  valueKey
+    .split("_")
+    .map(
+      (segment) =>
+        segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase(),
+    )
+    .join(" ");
 
 export default function SettingsPage() {
   const { user, isSuperAdmin, isHR, isDeptManager } = useAuth();
   const ui = useUIFeedback();
-  const role = user?.role || 'EMPLOYEE';
+  const role = user?.role || "EMPLOYEE";
 
   const [policies, setPolicies] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState("");
   const [loading, setLoading] = useState(true);
   const [savingPolicyId, setSavingPolicyId] = useState(null);
-  const [feedback, setFeedback] = useState('');
-  const [pageError, setPageError] = useState('');
+  const [feedback, setFeedback] = useState("");
+  const [pageError, setPageError] = useState("");
 
   const canAccessPage = isSuperAdmin || isHR || isDeptManager;
 
-  const fetchData = async (deptId = '') => {
+  const fetchData = async (deptId = "") => {
     try {
       setLoading(true);
-      setPageError('');
+      setPageError("");
       const params = {};
       if (deptId) {
         params.department_id = deptId;
       }
       const [policyRes, deptRes] = await Promise.all([
         settingsAPI.getPolicies(params),
-        (isSuperAdmin || isHR) ? departmentAPI.list() : Promise.resolve({ data: [] }),
+        isSuperAdmin || isHR
+          ? departmentAPI.list()
+          : Promise.resolve({ data: [] }),
       ]);
       setPolicies(policyRes.data || []);
       setDepartments(deptRes.data || []);
     } catch (err) {
-      console.error('Failed to fetch policy settings', err);
-      const detail = err.response?.data?.detail || 'Failed to load policies. Please refresh and try again.';
+      console.error("Failed to fetch policy settings", err);
+      const detail =
+        err.response?.data?.detail ||
+        "Failed to load policies. Please refresh and try again.";
       setPageError(detail);
       setPolicies([]);
       setDepartments([]);
@@ -63,7 +80,7 @@ export default function SettingsPage() {
     };
 
     policies.forEach((policy) => {
-      const domain = policy.domain || 'WORKFORCE';
+      const domain = policy.domain || "WORKFORCE";
       if (!groups[domain]) {
         groups[domain] = [];
       }
@@ -78,11 +95,12 @@ export default function SettingsPage() {
       prev.map((policy) => {
         if (policy.policy_id !== policyId) return policy;
 
-        const parsed = rawValue === ''
-          ? ''
-          : Number.isNaN(Number(rawValue))
-            ? rawValue
-            : Number(rawValue);
+        const parsed =
+          rawValue === ""
+            ? ""
+            : Number.isNaN(Number(rawValue))
+              ? rawValue
+              : Number(rawValue);
 
         return {
           ...policy,
@@ -99,7 +117,7 @@ export default function SettingsPage() {
     if (!policy.editable) return;
 
     setSavingPolicyId(policy.policy_id);
-    setFeedback('');
+    setFeedback("");
     try {
       const payload = {
         value: policy.value,
@@ -122,7 +140,9 @@ export default function SettingsPage() {
   const togglePolicyActive = (policyId) => {
     setPolicies((prev) =>
       prev.map((policy) =>
-        policy.policy_id === policyId ? { ...policy, is_active: !policy.is_active } : policy,
+        policy.policy_id === policyId
+          ? { ...policy, is_active: !policy.is_active }
+          : policy,
       ),
     );
   };
@@ -141,20 +161,36 @@ export default function SettingsPage() {
 
   return (
     <div className="page-container">
-      <header className="page-header-premium">
+      <header className="page-header">
         <div className="page-header-content">
-          <span className="page-header-chip">FR15 CONFIGURABLE POLICY ENGINE</span>
-          <h1 className="page-title-premium">Policy Engine</h1>
-          <p className="page-subtitle-premium">
-            Role-scoped policy controls with company-wide and department override support
+          <span
+            className="hub-shell-chip"
+            style={{ display: "inline-flex", marginBottom: "0.75rem" }}
+          >
+            FR15 CONFIGURABLE POLICY ENGINE
+          </span>
+          <h1 className="page-title">
+            Policy <span className="highlight">Engine</span>
+          </h1>
+          <p className="page-subtitle">
+            Role-scoped policy controls with company-wide and department
+            override support
           </p>
         </div>
+        <span
+          className="material-symbols-outlined"
+          style={{ fontSize: "3rem", color: "var(--primary)", opacity: 0.3 }}
+        >
+          policy
+        </span>
       </header>
 
       <div className="stats-row">
         <div className="stat-card-mini">
           <span className="stat-card-mini-label">Current Role</span>
-          <span className="stat-card-mini-value">{ROLE_LABELS[role] || role}</span>
+          <span className="stat-card-mini-value">
+            {ROLE_LABELS[role] || role}
+          </span>
         </div>
         <div className="stat-card-mini">
           <span className="stat-card-mini-label">Visible Policies</span>
@@ -162,11 +198,15 @@ export default function SettingsPage() {
         </div>
         <div className="stat-card-mini">
           <span className="stat-card-mini-label">Editable</span>
-          <span className="stat-card-mini-value">{policies.filter((p) => p.editable).length}</span>
+          <span className="stat-card-mini-value">
+            {policies.filter((p) => p.editable).length}
+          </span>
         </div>
         <div className="stat-card-mini stat-card-mini--accent">
           <span className="stat-card-mini-label">Domain Scope</span>
-          <span className="stat-card-mini-value">{isSuperAdmin ? 'System + Workforce' : 'Workforce'}</span>
+          <span className="stat-card-mini-value">
+            {isSuperAdmin ? "System + Workforce" : "Workforce"}
+          </span>
         </div>
       </div>
 
@@ -188,7 +228,12 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {pageError && <ErrorStateStandard message={pageError} onRetry={() => fetchData(selectedDepartment)} />}
+      {pageError && (
+        <ErrorStateStandard
+          message={pageError}
+          onRetry={() => fetchData(selectedDepartment)}
+        />
+      )}
 
       {feedback && (
         <div className="alert-banner alert-banner--error">
@@ -198,7 +243,11 @@ export default function SettingsPage() {
       )}
 
       {loading ? (
-        <TableSkeleton rows={8} columns={3} label="Loading policy settings..." />
+        <TableSkeleton
+          rows={8}
+          columns={3}
+          label="Loading policy settings..."
+        />
       ) : policies.length === 0 ? (
         <EmptyStateStandard
           icon="policy"
@@ -212,11 +261,15 @@ export default function SettingsPage() {
             return (
               <section key={domain} className="policy-domain-section">
                 <div className="policy-domain-header">
-                  <h2>{domain === 'SYSTEM' ? 'System Policies' : 'Workforce Policies'}</h2>
+                  <h2>
+                    {domain === "SYSTEM"
+                      ? "System Policies"
+                      : "Workforce Policies"}
+                  </h2>
                   <p>
-                    {domain === 'SYSTEM'
-                      ? 'Platform, infrastructure, and hardware-level controls'
-                      : 'Attendance, correction, and workforce behavior rules'}
+                    {domain === "SYSTEM"
+                      ? "Platform, infrastructure, and hardware-level controls"
+                      : "Attendance, correction, and workforce behavior rules"}
                   </p>
                 </div>
 
@@ -225,45 +278,73 @@ export default function SettingsPage() {
                     <div key={policy.policy_id} className="policy-card">
                       <div className="policy-card-header">
                         <div className="policy-card-title-group">
-                          <span className="material-symbols-outlined policy-card-icon">policy</span>
+                          <span className="material-symbols-outlined policy-card-icon">
+                            policy
+                          </span>
                           <div>
                             <h3 className="policy-card-title">{policy.name}</h3>
-                            <span className="policy-card-type">{policy.policy_type}</span>
+                            <span className="policy-card-type">
+                              {policy.policy_type}
+                            </span>
                           </div>
                         </div>
                         <div className="policy-scope-chip-wrap">
-                          <span className={`policy-scope-chip ${policy.scope === 'DEPARTMENT' ? 'policy-scope-chip--dept' : ''}`}>
+                          <span
+                            className={`policy-scope-chip ${policy.scope === "DEPARTMENT" ? "policy-scope-chip--dept" : ""}`}
+                          >
                             {policy.scope}
                           </span>
                         </div>
                       </div>
 
-                      <p className="policy-description">{policy.description || 'No description available.'}</p>
+                      <p className="policy-description">
+                        {policy.description || "No description available."}
+                      </p>
 
                       <div className="policy-meta-grid">
                         <div>
-                          <span className="policy-meta-label">Minimum Role</span>
-                          <span className="policy-meta-value">{ROLE_LABELS[policy.min_role_to_edit] || policy.min_role_to_edit || '—'}</span>
+                          <span className="policy-meta-label">
+                            Minimum Role
+                          </span>
+                          <span className="policy-meta-value">
+                            {ROLE_LABELS[policy.min_role_to_edit] ||
+                              policy.min_role_to_edit ||
+                              "—"}
+                          </span>
                         </div>
                         <div>
                           <span className="policy-meta-label">Department</span>
-                          <span className="policy-meta-value">{policy.department_name || 'Global'}</span>
+                          <span className="policy-meta-value">
+                            {policy.department_name || "Global"}
+                          </span>
                         </div>
                       </div>
 
                       <div className="policy-params">
-                        {Object.entries(policy.value || {}).map(([key, val]) => (
-                          <div key={key} className="policy-param">
-                            <label className="policy-param-label">{key.replace(/_/g, ' ')}</label>
-                            <input
-                              type={typeof val === 'number' ? 'number' : 'text'}
-                              className="policy-param-input"
-                              value={val}
-                              disabled={!policy.editable}
-                              onChange={(e) => updatePolicyValue(policy.policy_id, key, e.target.value)}
-                            />
-                          </div>
-                        ))}
+                        {Object.entries(policy.value || {}).map(
+                          ([key, val]) => (
+                            <div key={key} className="policy-param">
+                              <label className="policy-param-label">
+                                {formatPolicyParamLabel(key)}
+                              </label>
+                              <input
+                                type={
+                                  typeof val === "number" ? "number" : "text"
+                                }
+                                className="policy-param-input"
+                                value={val}
+                                disabled={!policy.editable}
+                                onChange={(e) =>
+                                  updatePolicyValue(
+                                    policy.policy_id,
+                                    key,
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            </div>
+                          ),
+                        )}
                       </div>
 
                       <div className="policy-actions-row">
@@ -272,7 +353,9 @@ export default function SettingsPage() {
                             type="checkbox"
                             checked={policy.is_active}
                             disabled={!policy.editable}
-                            onChange={() => togglePolicyActive(policy.policy_id)}
+                            onChange={() =>
+                              togglePolicyActive(policy.policy_id)
+                            }
                           />
                           Active
                         </label>
@@ -280,10 +363,17 @@ export default function SettingsPage() {
                         <button
                           className="btn btn-primary"
                           type="button"
-                          disabled={!policy.editable || savingPolicyId === policy.policy_id}
+                          disabled={
+                            !policy.editable ||
+                            savingPolicyId === policy.policy_id
+                          }
                           onClick={() => handleUpdate(policy)}
                         >
-                          {savingPolicyId === policy.policy_id ? 'Saving...' : policy.editable ? 'Save Policy' : 'Read Only'}
+                          {savingPolicyId === policy.policy_id
+                            ? "Saving..."
+                            : policy.editable
+                              ? "Save Policy"
+                              : "Read Only"}
                         </button>
                       </div>
                     </div>

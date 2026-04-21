@@ -8,9 +8,10 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { systemAPI } from "../services/api";
-import { useUIFeedback } from '../context/UIFeedbackContext';
+import { useUIFeedback } from "../context/UIFeedbackContext";
 
-const isPlainObject = (value) => value && typeof value === 'object' && !Array.isArray(value);
+const isPlainObject = (value) =>
+  value && typeof value === "object" && !Array.isArray(value);
 
 const normalizeSystemInsights = (payload) => {
   if (!isPlainObject(payload)) {
@@ -19,9 +20,15 @@ const normalizeSystemInsights = (payload) => {
 
   return {
     ...payload,
-    data_quality: isPlainObject(payload.data_quality) ? payload.data_quality : null,
-    hardware_health: isPlainObject(payload.hardware_health) ? payload.hardware_health : null,
-    security_alerts: Array.isArray(payload.security_alerts) ? payload.security_alerts : [],
+    data_quality: isPlainObject(payload.data_quality)
+      ? payload.data_quality
+      : null,
+    hardware_health: isPlainObject(payload.hardware_health)
+      ? payload.hardware_health
+      : null,
+    security_alerts: Array.isArray(payload.security_alerts)
+      ? payload.security_alerts
+      : [],
     audit_feed: Array.isArray(payload.audit_feed) ? payload.audit_feed : [],
   };
 };
@@ -50,8 +57,16 @@ function formatTime(isoString) {
 // ─── Status Ring component ───────────────────────────────────────────────────
 function StatusRing({ status }) {
   const cfg = {
-    ONLINE: { color: "var(--status-active)", icon: "check_circle", label: "Online" },
-    DEGRADED: { color: "var(--status-break)", icon: "warning", label: "Degraded" },
+    ONLINE: {
+      color: "var(--status-active)",
+      icon: "check_circle",
+      label: "Online",
+    },
+    DEGRADED: {
+      color: "var(--status-break)",
+      icon: "warning",
+      label: "Degraded",
+    },
     OFFLINE: { color: "var(--primary)", icon: "error", label: "Offline" },
   }[status] ?? { color: "var(--secondary)", icon: "help", label: status };
 
@@ -74,9 +89,13 @@ function StatusRing({ status }) {
 function DataQualityPanel({ dq }) {
   if (!dq) return null;
 
+  const totalScans = Number(dq.total_scans) || 0;
+  const hasSourceData = Object.keys(dq.by_source || {}).length > 0;
+  const hasScannerData = (dq.by_scanner || []).length > 0;
+
   const maxScannerCount = Math.max(
     ...(dq.by_scanner || []).map((s) => s.count),
-    1
+    1,
   );
 
   const sourceColors = {
@@ -96,7 +115,9 @@ function DataQualityPanel({ dq }) {
           </span>
           <div className="si-kpi-body">
             <span className="si-kpi-chip">TOTAL SCANS</span>
-            <span className="si-kpi-value">{dq.total_scans.toLocaleString()}</span>
+            <span className="si-kpi-value">
+              {dq.total_scans.toLocaleString()}
+            </span>
             <span className="si-kpi-caption">events captured</span>
           </div>
         </div>
@@ -187,7 +208,9 @@ function DataQualityPanel({ dq }) {
       <div className="si-quality-bar-wrap">
         <div className="si-quality-bar-labels">
           <span>Scan Quality Breakdown</span>
-          <span>{dq.valid_scans} valid / {dq.invalid_scans} invalid</span>
+          <span>
+            {dq.valid_scans} valid / {dq.invalid_scans} invalid
+          </span>
         </div>
         <div className="si-quality-bar-track">
           <div
@@ -217,7 +240,8 @@ function DataQualityPanel({ dq }) {
             <span className="si-bar-dot si-bar-dot--duplicate" /> Duplicate
           </span>
           <span className="si-bar-legend-item">
-            <span className="si-bar-dot si-bar-dot--unregistered" /> Unregistered
+            <span className="si-bar-dot si-bar-dot--unregistered" />{" "}
+            Unregistered
           </span>
         </div>
       </div>
@@ -232,7 +256,9 @@ function DataQualityPanel({ dq }) {
               <div key={src} className="si-source-row">
                 <span
                   className="si-source-dot"
-                  style={{ background: sourceColors[src] || "var(--secondary)" }}
+                  style={{
+                    background: sourceColors[src] || "var(--secondary)",
+                  }}
                 />
                 <span className="si-source-name">{src}</span>
                 <span className="si-source-count">{count}</span>
@@ -240,13 +266,19 @@ function DataQualityPanel({ dq }) {
                   <div
                     className="si-source-bar-fill"
                     style={{
-                      width: `${(count / dq.total_scans) * 100}%`,
+                      width: `${totalScans > 0 ? (count / totalScans) * 100 : 0}%`,
                       background: sourceColors[src] || "var(--secondary)",
                     }}
                   />
                 </div>
               </div>
             ))}
+            {!hasSourceData && (
+              <div className="si-source-empty">
+                <span className="material-symbols-outlined">timeline</span>
+                <span>No event source data for this period.</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -268,6 +300,12 @@ function DataQualityPanel({ dq }) {
                 )}
               </div>
             ))}
+            {!hasScannerData && (
+              <div className="si-source-empty">
+                <span className="material-symbols-outlined">sensors_off</span>
+                <span>No scanner activity recorded for this period.</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -294,7 +332,12 @@ function HardwareHealthPanel({ hw }) {
             <span className="si-kpi-chip">SYSTEM UPTIME</span>
             <span
               className="si-kpi-value"
-              style={{ color: hw.system_uptime_pct >= 80 ? "var(--status-active)" : "var(--primary)" }}
+              style={{
+                color:
+                  hw.system_uptime_pct >= 80
+                    ? "var(--status-active)"
+                    : "var(--primary)",
+              }}
             >
               {hw.system_uptime_pct}%
             </span>
@@ -314,7 +357,9 @@ function HardwareHealthPanel({ hw }) {
           <div className="si-kpi-body">
             <span className="si-kpi-chip">AVG RESPONSE</span>
             <span className="si-kpi-value">
-              {hw.avg_response_time_ms > 0 ? `${hw.avg_response_time_ms}ms` : "—"}
+              {hw.avg_response_time_ms > 0
+                ? `${hw.avg_response_time_ms}ms`
+                : "—"}
             </span>
             <span className="si-kpi-caption">heartbeat latency</span>
           </div>
@@ -325,7 +370,9 @@ function HardwareHealthPanel({ hw }) {
             className="material-symbols-outlined si-kpi-icon"
             style={{
               color:
-                hw.offline_count > 0 ? "var(--primary)" : "var(--status-active)",
+                hw.offline_count > 0
+                  ? "var(--primary)"
+                  : "var(--status-active)",
             }}
           >
             wifi_off
@@ -335,7 +382,8 @@ function HardwareHealthPanel({ hw }) {
             <span
               className="si-kpi-value"
               style={{
-                color: hw.offline_count > 0 ? "var(--primary)" : "var(--on-surface)",
+                color:
+                  hw.offline_count > 0 ? "var(--primary)" : "var(--on-surface)",
               }}
             >
               {hw.offline_count}
@@ -404,7 +452,9 @@ function HardwareHealthPanel({ hw }) {
               <div className="si-scanner-metric">
                 <span className="si-scanner-metric-label">Last Heartbeat</span>
                 <span className="si-scanner-metric-value si-scanner-metric-value--sm">
-                  {sc.last_heartbeat ? formatRelTime(sc.last_heartbeat) : "Never"}
+                  {sc.last_heartbeat
+                    ? formatRelTime(sc.last_heartbeat)
+                    : "Never"}
                 </span>
               </div>
             </div>
@@ -514,7 +564,9 @@ function SecurityAuditPanel({ alerts, auditFeed }) {
                     </div>
                     <span className="si-feed-sub">
                       {alert.scanner_name} · {alert.door_name} ·{" "}
-                      <code className="si-fp-hint">{alert.fingerprint_hint}</code>
+                      <code className="si-fp-hint">
+                        {alert.fingerprint_hint}
+                      </code>
                     </span>
                     <span className="si-feed-time">
                       {formatTime(alert.scan_timestamp)}
@@ -531,7 +583,9 @@ function SecurityAuditPanel({ alerts, auditFeed }) {
         <div className="si-feed-list">
           {auditFeed.length === 0 ? (
             <div className="si-feed-empty">
-              <span className="material-symbols-outlined">history_toggle_off</span>
+              <span className="material-symbols-outlined">
+                history_toggle_off
+              </span>
               <p>No audit events in this period</p>
             </div>
           ) : (
@@ -589,13 +643,16 @@ export default function SystemInsightsPage() {
       const res = await systemAPI.insights(timeRange);
       const normalized = normalizeSystemInsights(res.data);
       if (!normalized) {
-        throw new Error('Unexpected system insights response');
+        throw new Error("Unexpected system insights response");
       }
       setData(normalized);
     } catch (err) {
       console.error("Failed to load system insights:", err);
       setError("Unable to load system insights. Please try again.");
-      ui.error(err.response?.data?.detail || 'Unable to load system insights. Please try again.');
+      ui.error(
+        err.response?.data?.detail ||
+          "Unable to load system insights. Please try again.",
+      );
       setData(null);
     } finally {
       setLoading(false);
@@ -606,9 +663,8 @@ export default function SystemInsightsPage() {
     fetchInsights();
   }, [fetchInsights]);
 
-  const criticalAlerts = data?.security_alerts?.filter(
-    (a) => a.severity === "CRITICAL"
-  ).length ?? 0;
+  const criticalAlerts =
+    data?.security_alerts?.filter((a) => a.severity === "CRITICAL").length ?? 0;
 
   if (loading) {
     return (
@@ -686,16 +742,12 @@ export default function SystemInsightsPage() {
             </div>
           </div>
           {data?.data_quality?.valid_rate_pct >= 95 ? (
-            <div
-              className="insights-trend-badge insights-trend-badge--improving"
-            >
+            <div className="insights-trend-badge insights-trend-badge--improving">
               <span className="material-symbols-outlined">check_circle</span>
               Healthy
             </div>
           ) : (
-            <div
-              className="insights-trend-badge insights-trend-badge--declining"
-            >
+            <div className="insights-trend-badge insights-trend-badge--declining">
               <span className="material-symbols-outlined">warning</span>
               Needs Attention
             </div>
@@ -714,15 +766,13 @@ export default function SystemInsightsPage() {
             <div>
               <h2 className="chart-card-title">Hardware Health Monitoring</h2>
               <p className="chart-card-subtitle">
-                {data?.hardware_health?.total_scanners ?? 0} registered scanners ·
-                Real-time status
+                {data?.hardware_health?.total_scanners ?? 0} registered scanners
+                · Real-time status
               </p>
             </div>
           </div>
           {data?.hardware_health?.offline_count > 0 && (
-            <div
-              className="insights-trend-badge insights-trend-badge--declining"
-            >
+            <div className="insights-trend-badge insights-trend-badge--declining">
               <span className="material-symbols-outlined">wifi_off</span>
               {data.hardware_health.offline_count} Offline
             </div>
@@ -746,9 +796,7 @@ export default function SystemInsightsPage() {
             </div>
           </div>
           {criticalAlerts > 0 && (
-            <div
-              className="insights-trend-badge insights-trend-badge--declining"
-            >
+            <div className="insights-trend-badge insights-trend-badge--declining">
               <span className="material-symbols-outlined">lock_open</span>
               {criticalAlerts} Critical
             </div>

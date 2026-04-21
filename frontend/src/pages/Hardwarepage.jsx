@@ -138,12 +138,17 @@ export default function HardwarePage() {
       <div className="page-header">
         <div className="page-header-content">
           <h1 className="page-title">
-            <span className="material-symbols-outlined">devices</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', verticalAlign: 'middle', marginRight: '0.5rem', color: 'var(--primary)' }}>monitor_heart</span>
             Hardware <span className="highlight">Monitoring</span>
           </h1>
           <p className="page-subtitle">Real-time scanner health and performance tracking</p>
         </div>
+        <button className="btn-secondary" onClick={loadScannerHealth} disabled={loading}>
+          <span className="material-symbols-outlined">refresh</span>
+          Refresh
+        </button>
       </div>
+
 
       {error && <ErrorStateStandard message={error} onRetry={loadScannerHealth} />}
 
