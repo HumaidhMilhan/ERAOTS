@@ -59,6 +59,7 @@ def _normalize_sl_phone(phone: str) -> str:
 async def create_employee(
     data: EmployeeCreate,
     db: AsyncSession = Depends(get_db),
+    current_user: UserAccount = Depends(require_roles(["SUPER_ADMIN", "HR_MANAGER"])),
 ):
     """FR5.1: Create a new employee with user account."""
     
@@ -88,6 +89,15 @@ async def create_employee(
     # Validate phone format (Sri Lanka)
     normalized_phone = _normalize_sl_phone(data.phone) if data.phone else None
 
+    # Check department is active
+    if data.department_id:
+        dept_check = await db.execute(select(Department).where(Department.department_id == data.department_id))
+        dept_obj = dept_check.scalar_one_or_none()
+        if not dept_obj:
+            raise HTTPException(status_code=400, detail="Department not found")
+        if not dept_obj.is_active:
+            raise HTTPException(status_code=400, detail="Cannot assign to an inactive department")
+
     # Create employee
     employee = Employee(
         first_name=data.first_name,
@@ -110,6 +120,8 @@ async def create_employee(
         managed_dept = dept_result.scalar_one_or_none()
         if not managed_dept:
             raise HTTPException(status_code=400, detail="Managed department not found")
+        if not managed_dept.is_active:
+            raise HTTPException(status_code=400, detail="Cannot assign manager to an inactive department")
         managed_dept.manager_id = employee.employee_id
         # Manager always belongs to the department they manage
         employee.department_id = managed_dept.department_id
@@ -151,6 +163,7 @@ async def list_employees(
     status_filter: str = None,
     search: str = None,
     db: AsyncSession = Depends(get_db),
+    current_user: UserAccount = Depends(require_roles(["SUPER_ADMIN", "HR_MANAGER", "MANAGER"])),
 ):
     """FR5.1: List all employees with optional filters."""
     query = select(Employee).options(selectinload(Employee.department))
@@ -201,6 +214,7 @@ async def list_employees(
 async def get_employee(
     employee_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: UserAccount = Depends(require_roles(["SUPER_ADMIN", "HR_MANAGER", "MANAGER"])),
 ):
     """Get a single employee by ID."""
     result = await db.execute(
@@ -238,6 +252,7 @@ async def update_employee(
     employee_id: UUID,
     data: EmployeeUpdate,
     db: AsyncSession = Depends(get_db),
+    current_user: UserAccount = Depends(require_roles(["SUPER_ADMIN", "HR_MANAGER"])),
 ):
     """FR5.1: Update an employee profile."""
     result = await db.execute(
@@ -254,6 +269,12 @@ async def update_employee(
     if data.phone is not None:
         emp.phone = _normalize_sl_phone(data.phone) if data.phone else None
     if data.department_id is not None:
+        dept_check = await db.execute(select(Department).where(Department.department_id == data.department_id))
+        dept_obj = dept_check.scalar_one_or_none()
+        if not dept_obj:
+            raise HTTPException(status_code=400, detail="Department not found")
+        if not dept_obj.is_active:
+            raise HTTPException(status_code=400, detail="Cannot assign to an inactive department")
         emp.department_id = data.department_id
     if data.fingerprint_id is not None:
         emp.fingerprint_hash = hash_fingerprint(data.fingerprint_id)
@@ -288,6 +309,7 @@ async def update_employee(
 async def create_department(
     data: DepartmentCreate,
     db: AsyncSession = Depends(get_db),
+    current_user: UserAccount = Depends(require_roles(["SUPER_ADMIN", "HR_MANAGER"])),
 ):
     """FR5.2: Create a new department."""
     existing = await db.execute(
@@ -316,7 +338,10 @@ async def create_department(
 
 
 @router.get("/departments", response_model=List[DepartmentResponse])
-async def list_departments(db: AsyncSession = Depends(get_db)):
+async def list_departments(
+    db: AsyncSession = Depends(get_db),
+    current_user: UserAccount = Depends(require_roles(["SUPER_ADMIN", "HR_MANAGER", "MANAGER"])),
+):
     """FR5.2: List all departments with employee counts."""
     result = await db.execute(
         select(Department).order_by(Department.name)
@@ -348,6 +373,7 @@ async def update_department(
     department_id: UUID,
     data: DepartmentUpdate,
     db: AsyncSession = Depends(get_db),
+    current_user: UserAccount = Depends(require_roles(["SUPER_ADMIN", "HR_MANAGER"])),
 ):
     """FR5.2: Update a department."""
     result = await db.execute(

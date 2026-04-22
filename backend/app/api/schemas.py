@@ -2,7 +2,10 @@
 Pydantic schemas for request/response validation.
 Shared across all API endpoints.
 """
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
+
+class StrictBaseModel(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, str_max_length=10000)
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from uuid import UUID
@@ -10,12 +13,12 @@ from uuid import UUID
 
 # ==================== AUTH ====================
 
-class LoginRequest(BaseModel):
+class LoginRequest(StrictBaseModel):
     email: str
     password: str
 
 
-class TokenResponse(BaseModel):
+class TokenResponse(StrictBaseModel):
     access_token: str
     token_type: str = "bearer"
     user_id: UUID
@@ -23,7 +26,7 @@ class TokenResponse(BaseModel):
     employee_name: str
 
 
-class UserInfo(BaseModel):
+class UserInfo(StrictBaseModel):
     user_id: UUID
     employee_id: UUID
     email: str
@@ -46,7 +49,7 @@ class UserInfo(BaseModel):
 
 # ==================== EMPLOYEE ====================
 
-class EmployeeCreate(BaseModel):
+class EmployeeCreate(StrictBaseModel):
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
     email: EmailStr
@@ -60,7 +63,7 @@ class EmployeeCreate(BaseModel):
     password: str = Field(..., min_length=6)
 
 
-class EmployeeUpdate(BaseModel):
+class EmployeeUpdate(StrictBaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     phone: Optional[str] = None
@@ -70,7 +73,7 @@ class EmployeeUpdate(BaseModel):
     status: Optional[str] = None
 
 
-class EmployeeResponse(BaseModel):
+class EmployeeResponse(StrictBaseModel):
     employee_id: UUID
     first_name: str
     last_name: str
@@ -90,20 +93,20 @@ class EmployeeResponse(BaseModel):
 
 # ==================== DEPARTMENT ====================
 
-class DepartmentCreate(BaseModel):
+class DepartmentCreate(StrictBaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     manager_id: Optional[UUID] = None
 
 
-class DepartmentUpdate(BaseModel):
+class DepartmentUpdate(StrictBaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     manager_id: Optional[UUID] = None
     is_active: Optional[bool] = None
 
 
-class DepartmentResponse(BaseModel):
+class DepartmentResponse(StrictBaseModel):
     department_id: UUID
     name: str
     description: Optional[str] = None
@@ -118,7 +121,7 @@ class DepartmentResponse(BaseModel):
 
 # ==================== SCAN EVENT ====================
 
-class ScanEventRequest(BaseModel):
+class ScanEventRequest(StrictBaseModel):
     """Incoming scan from hardware/simulator."""
     scanner_id: UUID
     fingerprint_id: str
@@ -126,7 +129,7 @@ class ScanEventRequest(BaseModel):
     timestamp: Optional[datetime] = None
 
 
-class ScanEventResponse(BaseModel):
+class ScanEventResponse(StrictBaseModel):
     event_id: UUID
     scanner_id: UUID
     employee_id: Optional[UUID] = None
@@ -143,7 +146,7 @@ class ScanEventResponse(BaseModel):
 
 # ==================== OCCUPANCY ====================
 
-class OccupancyOverview(BaseModel):
+class OccupancyOverview(StrictBaseModel):
     total_inside: int
     total_capacity: int
     occupancy_percentage: float
@@ -154,7 +157,7 @@ class OccupancyOverview(BaseModel):
     outside_count: int
 
 
-class EmployeeOccupancyState(BaseModel):
+class EmployeeOccupancyState(StrictBaseModel):
     employee_id: UUID
     employee_name: str
     department: Optional[str] = None
@@ -167,14 +170,14 @@ class EmployeeOccupancyState(BaseModel):
 
 # ==================== SCANNER ====================
 
-class ScannerCreate(BaseModel):
+class ScannerCreate(StrictBaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     door_name: str = Field(..., min_length=1, max_length=100)
     location_description: Optional[str] = None
     heartbeat_interval_sec: Optional[int] = 60
 
 
-class ScannerResponse(BaseModel):
+class ScannerResponse(StrictBaseModel):
     scanner_id: UUID
     name: str
     door_name: str
@@ -190,7 +193,7 @@ class ScannerResponse(BaseModel):
 # ==================== HARDWARE HEALTH MONITORING ====================
 
 
-class ScannerHealthLogResponse(BaseModel):
+class ScannerHealthLogResponse(StrictBaseModel):
     """Historical health log entry for a scanner."""
     log_id: UUID
     scanner_id: UUID
@@ -203,7 +206,7 @@ class ScannerHealthLogResponse(BaseModel):
         from_attributes = True
 
 
-class ScannerHealthResponse(BaseModel):
+class ScannerHealthResponse(StrictBaseModel):
     """Current health snapshot of a scanner."""
     scanner_id: UUID
     name: str
@@ -223,7 +226,7 @@ class ScannerHealthResponse(BaseModel):
         from_attributes = True
 
 
-class ScannerHealthHeartbeatRequest(BaseModel):
+class ScannerHealthHeartbeatRequest(StrictBaseModel):
     """Incoming heartbeat from scanner device."""
     status: str = "ONLINE"  # ONLINE, OFFLINE, DEGRADED
     response_time_ms: Optional[int] = None
@@ -231,7 +234,7 @@ class ScannerHealthHeartbeatRequest(BaseModel):
     battery_level: Optional[int] = None
 
 
-class ScannerHealthStatsResponse(BaseModel):
+class ScannerHealthStatsResponse(StrictBaseModel):
     """Summary statistics of all scanners."""
     total_scanners: int
     online: int
@@ -247,7 +250,7 @@ class ScannerHealthStatsResponse(BaseModel):
 # ==================== DASHBOARD ====================
 
 
-class DashboardData(BaseModel):
+class DashboardData(StrictBaseModel):
     occupancy: OccupancyOverview
     recent_events: List[ScanEventResponse]
     scanner_statuses: List[ScannerResponse]
@@ -255,14 +258,14 @@ class DashboardData(BaseModel):
 
 # ==================== GENERIC ====================
 
-class MessageResponse(BaseModel):
+class MessageResponse(StrictBaseModel):
     message: str
     detail: Optional[str] = None
 
 
 # ==================== PHASE C: SCHEDULES & LEAVE ====================
 
-class LeaveRequestCreate(BaseModel):
+class LeaveRequestCreate(StrictBaseModel):
     leave_type_id: UUID
     start_date: date
     end_date: date
@@ -271,7 +274,7 @@ class LeaveRequestCreate(BaseModel):
     half_day_session: Optional[str] = None  # AM or PM when is_half_day=true
 
 
-class LeaveRequestResponse(BaseModel):
+class LeaveRequestResponse(StrictBaseModel):
     request_id: UUID
     employee_id: UUID
     employee_name: Optional[str] = None
@@ -292,7 +295,7 @@ class LeaveRequestResponse(BaseModel):
         from_attributes = True
 
 
-class LeaveUsageSummary(BaseModel):
+class LeaveUsageSummary(StrictBaseModel):
     leave_type_id: UUID
     leave_type_name: str
     used_days: float
@@ -301,7 +304,7 @@ class LeaveUsageSummary(BaseModel):
     warning_level: str = "NONE"  # NONE, NEAR_LIMIT, EXCEEDED
 
 
-class LeaveCalendarEntry(BaseModel):
+class LeaveCalendarEntry(StrictBaseModel):
     request_id: UUID
     employee_id: UUID
     employee_name: Optional[str] = None
@@ -313,7 +316,7 @@ class LeaveCalendarEntry(BaseModel):
     half_day_session: Optional[str] = None
 
 
-class LeaveHolidayEntry(BaseModel):
+class LeaveHolidayEntry(StrictBaseModel):
     holiday_id: UUID
     name: str
     holiday_date: date
@@ -321,14 +324,14 @@ class LeaveHolidayEntry(BaseModel):
 
 # ==================== PHASE C: CORRECTIONS ====================
 
-class CorrectionRequestCreate(BaseModel):
+class CorrectionRequestCreate(StrictBaseModel):
     correction_date: date
     correction_type: str  # MISSED_SCAN, WRONG_SCAN, OTHER
     reason: str
     proposed_time: datetime
 
 
-class CorrectionRequestResponse(BaseModel):
+class CorrectionRequestResponse(StrictBaseModel):
     request_id: UUID
     employee_id: UUID
     employee_name: Optional[str] = None
@@ -351,7 +354,7 @@ class CorrectionRequestResponse(BaseModel):
 # ==================== PHASE C: NOTIFICATIONS ====================
 
 
-class NotificationResponse(BaseModel):
+class NotificationResponse(StrictBaseModel):
     notification_id: UUID
     user_id: UUID
     title: str
@@ -366,12 +369,12 @@ class NotificationResponse(BaseModel):
 # ==================== PHASE D: EMERGENCY ====================
 
 
-class EmergencyEventCreate(BaseModel):
+class EmergencyEventCreate(StrictBaseModel):
     emergency_type: str  # FIRE, DRILL, SECURITY_THREAT, OTHER
     notes: Optional[str] = None
 
 
-class EmergencyHeadcountResponse(BaseModel):
+class EmergencyHeadcountResponse(StrictBaseModel):
     id: UUID
     employee_id: UUID
     employee_name: Optional[str] = None
@@ -384,7 +387,7 @@ class EmergencyHeadcountResponse(BaseModel):
         from_attributes = True
 
 
-class EmergencyEventResponse(BaseModel):
+class EmergencyEventResponse(StrictBaseModel):
     emergency_id: UUID
     activated_by: UUID
     activator_name: Optional[str] = None
@@ -403,17 +406,17 @@ class EmergencyEventResponse(BaseModel):
 # ==================== SAFETY CHECK ====================
 
 
-class SafetyCheckSendRequest(BaseModel):
+class SafetyCheckSendRequest(StrictBaseModel):
     """Admin triggers 'Are you safe?' to all employees."""
     message: Optional[str] = "Are you safe? Please respond immediately."
 
 
-class SafetyCheckRespondRequest(BaseModel):
+class SafetyCheckRespondRequest(StrictBaseModel):
     """Employee replies to safety check."""
     response: str  # "YES" or "NO"
 
 
-class SafetyCheckEmployeeResponse(BaseModel):
+class SafetyCheckEmployeeResponse(StrictBaseModel):
     """Individual employee's safety check response."""
     id: UUID
     employee_id: UUID
@@ -428,7 +431,7 @@ class SafetyCheckEmployeeResponse(BaseModel):
         from_attributes = True
 
 
-class SafetyCheckOverview(BaseModel):
+class SafetyCheckOverview(StrictBaseModel):
     """Overview of all safety check responses for an emergency."""
     emergency_id: UUID
     total_employees: int
@@ -443,13 +446,13 @@ class SafetyCheckOverview(BaseModel):
 # ==================== PHASE D: SYSTEM SETTINGS ====================
 
 
-class PolicyUpdate(BaseModel):
+class PolicyUpdate(StrictBaseModel):
     value: Dict[str, Any]
     is_active: Optional[bool] = None
     effective_from: Optional[date] = None
 
 
-class PolicyOverrideCreate(BaseModel):
+class PolicyOverrideCreate(StrictBaseModel):
     policy_type: str
     department_id: Optional[UUID] = None
     value: Optional[Dict[str, Any]] = None
@@ -457,7 +460,7 @@ class PolicyOverrideCreate(BaseModel):
     effective_from: Optional[date] = None
 
 
-class PolicyResponse(BaseModel):
+class PolicyResponse(StrictBaseModel):
     policy_id: UUID
     name: str
     description: Optional[str] = None
@@ -479,12 +482,12 @@ class PolicyResponse(BaseModel):
 
 # ==================== HYBRID STATUS TRACKING ====================
 
-class StatusOverrideRequest(BaseModel):
+class StatusOverrideRequest(StrictBaseModel):
     """Manual portal toggle for status override (Hierarchy of Truth: High Priority)."""
     status: str = Field(..., description="Target status: ACTIVE or IN_MEETING")
 
 
-class StatusOverrideResponse(BaseModel):
+class StatusOverrideResponse(StrictBaseModel):
     employee_id: UUID
     previous_status: str
     new_status: str
@@ -495,7 +498,7 @@ class StatusOverrideResponse(BaseModel):
         from_attributes = True
 
 
-class PendingTransitionResponse(BaseModel):
+class PendingTransitionResponse(StrictBaseModel):
     """Pending calendar-triggered state transition (30-second rule)."""
     transition_id: UUID
     employee_id: UUID
@@ -513,12 +516,12 @@ class PendingTransitionResponse(BaseModel):
         from_attributes = True
 
 
-class TransitionActionRequest(BaseModel):
+class TransitionActionRequest(StrictBaseModel):
     """User action on a pending transition."""
     action: str = Field(..., description="Action: CONFIRM or CANCEL")
 
 
-class TransitionActionResponse(BaseModel):
+class TransitionActionResponse(StrictBaseModel):
     transition_id: UUID
     action_taken: str
     new_status: str
@@ -528,7 +531,7 @@ class TransitionActionResponse(BaseModel):
         from_attributes = True
 
 
-class CalendarSettingsUpdate(BaseModel):
+class CalendarSettingsUpdate(StrictBaseModel):
     """Update employee calendar settings."""
     provider: Optional[str] = None  # GOOGLE, MICROSOFT, ICAL, NONE
     is_enabled: Optional[bool] = None
@@ -539,7 +542,7 @@ class CalendarSettingsUpdate(BaseModel):
     auto_transition_enabled: Optional[bool] = None
 
 
-class CalendarSettingsResponse(BaseModel):
+class CalendarSettingsResponse(StrictBaseModel):
     settings_id: UUID
     employee_id: UUID
     provider: str
@@ -556,7 +559,7 @@ class CalendarSettingsResponse(BaseModel):
         from_attributes = True
 
 
-class SpecialMeetingCreate(BaseModel):
+class SpecialMeetingCreate(StrictBaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     start_at: datetime
     timezone: str = Field(default="Asia/Colombo")
@@ -565,7 +568,7 @@ class SpecialMeetingCreate(BaseModel):
     notes: Optional[str] = None
 
 
-class SpecialMeetingResponse(BaseModel):
+class SpecialMeetingResponse(StrictBaseModel):
     meeting_id: UUID
     title: str
     notes: Optional[str] = None
@@ -581,7 +584,7 @@ class SpecialMeetingResponse(BaseModel):
     created_at: datetime
 
 
-class ActionableNotificationResponse(BaseModel):
+class ActionableNotificationResponse(StrictBaseModel):
     """Notification with interactive action buttons."""
     notification_id: UUID
     title: str
@@ -601,21 +604,21 @@ class ActionableNotificationResponse(BaseModel):
 
 # ==================== HARDWARE / FR13 ====================
 
-class ScannerHeartbeatRequest(BaseModel):
+class ScannerHeartbeatRequest(StrictBaseModel):
     """Device sends heartbeat with performance metrics."""
     response_time_ms: Optional[int] = None
     error_message: Optional[str] = None
     buffer_size: Optional[int] = 0  # Number of buffered events
 
 
-class ScannerHeartbeatResponse(BaseModel):
+class ScannerHeartbeatResponse(StrictBaseModel):
     scanner_id: UUID
     status: str
     message: str
     server_time: datetime
 
 
-class ScannerHealthHistoryResponse(BaseModel):
+class ScannerHealthHistoryResponse(StrictBaseModel):
     """Historical health log entry."""
     log_id: UUID
     scanner_id: UUID
@@ -628,26 +631,26 @@ class ScannerHealthHistoryResponse(BaseModel):
         from_attributes = True
 
 
-class BufferedEventData(BaseModel):
+class BufferedEventData(StrictBaseModel):
     """Single event from device buffer."""
     fingerprint_id: str
     timestamp: datetime
     direction: str  # IN, OUT
 
 
-class ScannerBufferSyncRequest(BaseModel):
+class ScannerBufferSyncRequest(StrictBaseModel):
     """Device syncs buffered events while offline."""
     events: List[BufferedEventData] = []
     buffer_clear_requested: bool = False
 
 
-class BufferConflict(BaseModel):
+class BufferConflict(StrictBaseModel):
     """Conflict detected during buffer sync."""
     event_index: int
     reason: str  # DUPLICATE, VALIDATION_FAILED, etc.
 
 
-class ScannerBufferSyncResponse(BaseModel):
+class ScannerBufferSyncResponse(StrictBaseModel):
     """Result of buffer sync operation."""
     scanner_id: UUID
     events_received: int
@@ -659,7 +662,7 @@ class ScannerBufferSyncResponse(BaseModel):
 
 # ==================== PERSONAL INSIGHTS (FR10, FR12) ====================
 
-class PunctualityScoreResponse(BaseModel):
+class PunctualityScoreResponse(StrictBaseModel):
     """Punctuality KPI: 0-100 score with grade and trend."""
     score: int = 0
     grade: str = "N/A"
@@ -671,7 +674,7 @@ class PunctualityScoreResponse(BaseModel):
     streak_on_time: int = 0
 
 
-class DeskVsBuildingEntry(BaseModel):
+class DeskVsBuildingEntry(StrictBaseModel):
     """Single day entry comparing desk time to building time."""
     date: date
     desk_minutes: int = 0
@@ -681,7 +684,7 @@ class DeskVsBuildingEntry(BaseModel):
     productivity_ratio: float = 0.0
 
 
-class LateRiskPrediction(BaseModel):
+class LateRiskPrediction(StrictBaseModel):
     """Late risk prediction based on day-of-week historical patterns."""
     risk_level: str = "LOW"  # LOW, MODERATE, HIGH
     risk_percentage: float = 0.0
@@ -692,7 +695,7 @@ class LateRiskPrediction(BaseModel):
     day_risks: dict = {}  # {"Monday": 12.5, "Tuesday": 30.0, ...}
 
 
-class ArrivalTrendEntry(BaseModel):
+class ArrivalTrendEntry(StrictBaseModel):
     """Daily arrival time data point for trend charting."""
     date: date
     arrival_time: Optional[str] = None
@@ -702,7 +705,7 @@ class ArrivalTrendEntry(BaseModel):
     was_late: bool = False
 
 
-class MonthlyTrendEntry(BaseModel):
+class MonthlyTrendEntry(StrictBaseModel):
     """Monthly aggregated attendance metrics."""
     month: str  # "2026-04"
     month_label: str  # "April 2026"
@@ -715,7 +718,7 @@ class MonthlyTrendEntry(BaseModel):
     total_overtime_min: int = 0
 
 
-class PersonalInsightsSummary(BaseModel):
+class PersonalInsightsSummary(StrictBaseModel):
     """Quick-glance summary stats."""
     avg_arrival_time: Optional[str] = None
     avg_daily_hours: float = 0.0
@@ -726,7 +729,7 @@ class PersonalInsightsSummary(BaseModel):
     most_productive_day: Optional[str] = None
 
 
-class PersonalInsightsResponse(BaseModel):
+class PersonalInsightsResponse(StrictBaseModel):
     """Complete personal insights payload."""
     punctuality: PunctualityScoreResponse
     desk_vs_building: List[DeskVsBuildingEntry] = []
@@ -738,7 +741,7 @@ class PersonalInsightsResponse(BaseModel):
 
 # ==================== TEAM INSIGHTS (MANAGER) ====================
 
-class CoverageGapKPI(BaseModel):
+class CoverageGapKPI(StrictBaseModel):
     """Coverage KPI for required vs actual in-office headcount."""
     required_headcount: int = 0
     actual_headcount: int = 0
@@ -747,7 +750,7 @@ class CoverageGapKPI(BaseModel):
     status: str = "UNDERSTAFFED"  # FULLY_COVERED, PARTIALLY_COVERED, UNDERSTAFFED
 
 
-class LateClusterAlert(BaseModel):
+class LateClusterAlert(StrictBaseModel):
     """Late-coming clustering insight by weekday or scanner."""
     cluster_type: str  # DAY_OF_WEEK, SCANNER
     label: str
@@ -758,7 +761,7 @@ class LateClusterAlert(BaseModel):
     alert_message: str
 
 
-class TeamAnomalyFeedItem(BaseModel):
+class TeamAnomalyFeedItem(StrictBaseModel):
     """Single anomaly feed item for immediate manager awareness."""
     anomaly_type: str  # MISSED_SCAN, UNUSUAL_HOURS, EXCESSIVE_LATE, REPEATED_LATE
     severity: str = "MEDIUM"  # LOW, MEDIUM, HIGH
@@ -768,7 +771,7 @@ class TeamAnomalyFeedItem(BaseModel):
     message: str
 
 
-class TeamInsightsResponse(BaseModel):
+class TeamInsightsResponse(StrictBaseModel):
     """Manager-facing team insights payload."""
     department_id: UUID
     days_analyzed: int
@@ -779,7 +782,7 @@ class TeamInsightsResponse(BaseModel):
 
 # ==================== COMPANY INSIGHTS (HR MANAGER, FR12) ====================
 
-class HeatmapCell(BaseModel):
+class HeatmapCell(StrictBaseModel):
     """Single cell in the peak-hours heatmap: hour × day_of_week traffic count."""
     hour: int           # 0–23
     day_of_week: int    # 0=Monday … 6=Sunday
@@ -787,7 +790,7 @@ class HeatmapCell(BaseModel):
     count: int = 0
 
 
-class PolicySimPoint(BaseModel):
+class PolicySimPoint(StrictBaseModel):
     """Single point in the policy impact simulation curve."""
     office_start_offset_min: int   # Relative to current start (–60 to +60)
     label: str                     # Human-readable e.g. "8:30 AM (-30 min)"
@@ -795,7 +798,7 @@ class PolicySimPoint(BaseModel):
     late_count_delta: int          # Change vs current policy (negative = improvement)
 
 
-class DeptComparisonEntry(BaseModel):
+class DeptComparisonEntry(StrictBaseModel):
     """Aggregated attendance metrics for a single department."""
     department_name: str
     avg_punctuality_score: float = 0.0
@@ -805,7 +808,7 @@ class DeptComparisonEntry(BaseModel):
     employee_count: int = 0
 
 
-class CompanyInsightsResponse(BaseModel):
+class CompanyInsightsResponse(StrictBaseModel):
     """Complete company-wide insights payload for HR Managers (FR12.1, FR12.4)."""
     days_analyzed: int
     heatmap: List[HeatmapCell] = []
@@ -818,7 +821,7 @@ class CompanyInsightsResponse(BaseModel):
 
 # ==================== SYSTEM INSIGHTS (SUPER_ADMIN, FR13, NFR6) ====================
 
-class DataQualityKPI(BaseModel):
+class DataQualityKPI(StrictBaseModel):
     """Scan data integrity metrics for the Data Quality Dashboard."""
     total_scans: int = 0
     valid_scans: int = 0
@@ -830,7 +833,7 @@ class DataQualityKPI(BaseModel):
     by_scanner: list = []      # [{"scanner_name": str, "count": int, "invalid_count": int}]
 
 
-class HardwareHealthSummary(BaseModel):
+class HardwareHealthSummary(StrictBaseModel):
     """Aggregated hardware health KPIs across all scanners."""
     total_scanners: int = 0
     online_count: int = 0
@@ -842,7 +845,7 @@ class HardwareHealthSummary(BaseModel):
     scanners: list = []        # per-scanner detail rows
 
 
-class SecurityAlertItem(BaseModel):
+class SecurityAlertItem(StrictBaseModel):
     """Single security alert (unauthorized access or off-hours scan)."""
     alert_type: str            # UNAUTHORIZED, OFF_HOURS, REPEATED_UNAUTHORIZED
     scanner_name: str
@@ -852,7 +855,7 @@ class SecurityAlertItem(BaseModel):
     severity: str = "HIGH"     # HIGH, CRITICAL
 
 
-class AuditFeedItem(BaseModel):
+class AuditFeedItem(StrictBaseModel):
     """Single audit log entry for the admin audit feed."""
     audit_id: UUID
     action: str
@@ -862,7 +865,7 @@ class AuditFeedItem(BaseModel):
     created_at: datetime
 
 
-class SystemInsightsResponse(BaseModel):
+class SystemInsightsResponse(StrictBaseModel):
     """Complete Super Admin system insights payload (FR13, NFR6)."""
     days_analyzed: int
     data_quality: DataQualityKPI

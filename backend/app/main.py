@@ -13,6 +13,11 @@ from app.core.config import settings as app_settings
 from app.core.database import create_tables
 from app.api import auth, events, employees, attendance, schedules, corrections, notifications_v2, emergency, scanners, settings, reports, calendar, productivity, hardware
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.core.middleware import ContentSizeLimitMiddleware
+from app.core.rate_limit import limiter
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -88,6 +93,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Connect slowapi limiter to the app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Register Custom Security Middleware (Max Payload Size = 2MB)
+app.add_middleware(ContentSizeLimitMiddleware, max_upload_size=2_000_000)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -145,10 +157,12 @@ async def seed_initial_data():
     from app.core.security import hash_password, hash_fingerprint, generate_api_key, hash_api_key
     from sqlalchemy import select
 
+    from app.core.config import settings
+
     superadmin_email = "superadmin@eraots.com"
-    superadmin_password = "sup123"
+    superadmin_password = settings.INITIAL_SUPERADMIN_PASSWORD
     hr_email = "hr@eraots.com"
-    hr_password = "hr123"
+    hr_password = settings.INITIAL_HR_PASSWORD
     
     async with AsyncSessionLocal() as db:
         seeded_fresh_db = False

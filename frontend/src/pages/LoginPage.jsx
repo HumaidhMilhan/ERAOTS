@@ -9,13 +9,6 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import BrandLogo from '../components/BrandLogo';
 
-// Test accounts — 4 roles, aligned with the RBAC hierarchy
-const DEMO_ACCOUNTS = [
-  { label: 'Super Admin',  role: 'SUPER_ADMIN', email: 'superadmin@eraots.com', password: 'sup123' },
-  { label: 'HR Manager',  role: 'HR_MANAGER',  email: 'hr@eraots.com',         password: 'hr123'    },
-  { label: 'Dept Manager',role: 'MANAGER',     email: 'manager@eraots.com',    password: 'mgr123'   },
-  { label: 'Employee',    role: 'EMPLOYEE',    email: 'employee@eraots.com',   password: 'emp123'   },
-];
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -40,12 +33,6 @@ export default function LoginPage() {
     }
   };
 
-  // Quick-fill a demo account without relying on browser autocomplete
-  const fillDemo = (account) => {
-    setEmail(account.email);
-    setPassword(account.password);
-    setError('');
-  };
 
   return (
     <div className="login-page">
@@ -146,27 +133,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Demo Credential Pills — click to fill form; uses data-role for CSS color theming */}
-        <div className="login-hint">
-          <div className="login-hint-header">
-            <span className="material-symbols-outlined">manage_accounts</span>
-            <span>Quick Access — Click to fill credentials</span>
-          </div>
-          <div className="login-role-grid">
-            {DEMO_ACCOUNTS.map((acc) => (
-              <button
-                key={acc.email}
-                type="button"
-                data-role={acc.role}
-                className="login-role-pill"
-                onClick={() => fillDemo(acc)}
-              >
-                <span className="login-role-pill-label">{acc.label}</span>
-                <span className="login-role-pill-email">{acc.email}</span>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Version Footer */}
