@@ -11,6 +11,7 @@ import { TableSkeleton, EmptyStateStandard, ErrorStateStandard } from '../compon
 export default function MyAttendancePage() {
   const { user } = useAuth();
   const ui = useUIFeedback();
+  const { formatDate, formatTime } = useTimezone();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState('');
