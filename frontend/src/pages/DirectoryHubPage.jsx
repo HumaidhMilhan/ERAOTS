@@ -35,17 +35,6 @@ export default function DirectoryHubPage() {
 
   return (
     <div className="hub-shell">
-      <header className="hub-shell-header">
-        <div>
-          <span className="hub-shell-chip">FR5 ADMIN CONTROL PANEL</span>
-          <h1 className="hub-shell-title">Directory Hub</h1>
-          <p className="hub-shell-subtitle">
-            Unified desktop workspace for employee and department administration
-          </p>
-        </div>
-        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', opacity: 0.35 }}>groups</span>
-      </header>
-
       <section className="hub-tabs" aria-label="Directory views">
         {tabs.map((tab) => (
           <button
@@ -58,11 +47,6 @@ export default function DirectoryHubPage() {
             <span className="hub-tab-label">{tab.label}</span>
           </button>
         ))}
-      </section>
-
-      <section className="hub-context-card">
-        <h2>{currentTab.label}</h2>
-        <p>{currentTab.subtitle}</p>
       </section>
 
       <section className="hub-content">{currentTab.render()}</section>

@@ -59,17 +59,6 @@ export default function CorrectionsHubPage() {
 
   return (
     <div className="hub-shell">
-      <header className="hub-shell-header">
-        <div>
-          <span className="hub-shell-chip">FR14 CORRECTION WORKFLOW</span>
-          <h1 className="hub-shell-title">Corrections Hub</h1>
-          <p className="hub-shell-subtitle">
-            End-to-end attendance correction workflow with role-aware queues
-          </p>
-        </div>
-        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', opacity: 0.35 }}>edit_note</span>
-      </header>
-
       {tabs.length > 1 && (
         <section className="hub-tabs" aria-label="Correction workflow views">
           {tabs.map((tab) => (
@@ -85,11 +74,6 @@ export default function CorrectionsHubPage() {
           ))}
         </section>
       )}
-
-      <section className="hub-context-card">
-        <h2>{currentTab.label}</h2>
-        <p>{currentTab.subtitle}</p>
-      </section>
 
       <section className="hub-content">{currentTab.render()}</section>
     </div>

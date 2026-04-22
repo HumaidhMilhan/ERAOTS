@@ -33,26 +33,38 @@ export default function MySchedulePage() {
 
   const fetchData = async () => {
     if (!user?.employee_id) return;
-    
+
     setLoading(true);
-    try {
-      setPageError('');
-      const [schedRes, balanceRes] = await Promise.all([
-        scheduleAPI.mySchedule({ employee_id: user.employee_id }),
-        leaveAPI.getBalance()
-      ]);
-      setSchedules(schedRes.data || []);
-      setLeaveBalance(balanceRes.data || []);
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-      const detail = err.response?.data?.detail || 'Failed to fetch schedule and leave balance.';
+    setPageError('');
+
+    // Fetch schedule and leave balance independently so one failure doesn't block the other
+    const [schedResult, balanceResult] = await Promise.allSettled([
+      scheduleAPI.mySchedule({ employee_id: user.employee_id }),
+      leaveAPI.getBalance()
+    ]);
+
+    if (schedResult.status === 'fulfilled') {
+      setSchedules(schedResult.value.data || []);
+    } else {
+      console.error('Failed to fetch schedule:', schedResult.reason);
+      setSchedules([]);
+    }
+
+    if (balanceResult.status === 'fulfilled') {
+      setLeaveBalance(balanceResult.value.data || []);
+    } else {
+      console.error('Failed to fetch leave balance:', balanceResult.reason);
+      setLeaveBalance([]);
+    }
+
+    // Only show error if both failed
+    if (schedResult.status === 'rejected' && balanceResult.status === 'rejected') {
+      const detail = schedResult.reason?.response?.data?.detail || 'Failed to fetch schedule and leave balance.';
       setPageError(detail);
       ui.error(detail);
-      setSchedules([]);
-      setLeaveBalance([]);
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   const handleWeekChange = (direction) => {

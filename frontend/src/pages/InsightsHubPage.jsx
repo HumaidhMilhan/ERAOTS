@@ -70,17 +70,6 @@ export default function InsightsHubPage() {
 
   return (
     <div className="hub-shell">
-      <header className="hub-shell-header">
-        <div>
-          <span className="hub-shell-chip">FR12 ANALYTICS &amp; INSIGHTS</span>
-          <h1 className="hub-shell-title">Insights Hub</h1>
-          <p className="hub-shell-subtitle">
-            Consolidated analytics workspace with strict role-scoped visibility
-          </p>
-        </div>
-        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', opacity: 0.35 }}>monitoring</span>
-      </header>
-
       {tabs.length > 1 && (
         <section className="hub-tabs" aria-label="Insights views">
           {tabs.map((tab) => (
@@ -96,11 +85,6 @@ export default function InsightsHubPage() {
           ))}
         </section>
       )}
-
-      <section className="hub-context-card">
-        <h2>{currentTab.label}</h2>
-        <p>{currentTab.subtitle}</p>
-      </section>
 
       <section className="hub-content">{currentTab.render()}</section>
     </div>

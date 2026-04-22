@@ -1,17 +1,11 @@
 /**
- * AppLayout — Vigilant Glass Layout with Role-Aware Dual Portal Navigation.
+ * AppLayout — Premium layout with unified role-aware navigation & collapsible sidebar.
  *
- * Design System: Vigilant Glass (Bento + Glassmorphism)
- * - Zero inline styles — every visual decision is a CSS class from index.css
- * - Typography: Space Grotesk (font-headline) / Sora (font-body)
- * - Icons: Material Symbols Outlined, filled weight for active states
- * - No explicit border/divider lines — separation via tonal layers only
- *
- * Navigation Architecture:
- *  SUPER_ADMIN → System nav + personal schedule (no portal toggle)
- *  HR_MANAGER  → Managerial + personal schedule ↔ Personal portal toggle
- *  MANAGER     → Team management (6 items) ↔ Personal (6 items) toggle
- *  EMPLOYEE    → Personal pages only (6 items, no toggle)
+ * Navigation Architecture (unified — no more dual portal):
+ *  SUPER_ADMIN → Full system nav
+ *  HR_MANAGER  → Admin nav (all hubs + emergency + settings + profile)
+ *  MANAGER     → Standard nav + team page
+ *  EMPLOYEE    → Standard nav (personal pages via hub tabs)
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
@@ -21,7 +15,7 @@ import { employeeAPI, departmentAPI } from '../services/api';
 import NotificationBell from '../components/notifications/NotificationBell';
 import BrandLogo from '../components/BrandLogo';
 
-// ─── Navigation definitions ────────────────────────────────────────────────
+// ─── Unified Navigation definitions ────────────────────────────────────────
 
 const NAV_SUPER_ADMIN = [
   { to: '/',                label: 'Dashboard',      icon: 'pulse_alert' },
@@ -36,8 +30,9 @@ const NAV_SUPER_ADMIN = [
   { to: '/dev-tools',       label: 'Dev Tools',      icon: 'code' },
 ];
 
-const NAV_HR_MANAGERIAL = [
+const NAV_ADMIN = [
   { to: '/',               label: 'Dashboard',      icon: 'grid_view' },
+  { to: '/my-profile',     label: 'My Profile',     icon: 'person' },
   { to: '/directory',      label: 'Directory Hub',  icon: 'groups' },
   { to: '/attendance-hub', label: 'Attendance Hub', icon: 'event_available' },
   { to: '/schedule-hub',   label: 'Schedule Hub',   icon: 'calendar_month' },
@@ -45,35 +40,15 @@ const NAV_HR_MANAGERIAL = [
   { to: '/insights-hub',   label: 'Insights',       icon: 'monitoring' },
   { to: '/communications', label: 'Comms Hub',      icon: 'notifications' },
   { to: '/emergency',      label: 'Emergency',      icon: 'emergency' },
-  { to: '/settings',       label: 'HR Policies',    icon: 'policy' },
+  { to: '/settings',       label: 'Policies',       icon: 'policy' },
 ];
 
-const NAV_HR_PERSONAL = [
+const NAV_MANAGER = [
   { to: '/',               label: 'Dashboard',      icon: 'grid_view' },
   { to: '/my-profile',     label: 'My Profile',     icon: 'person' },
-  { to: '/attendance-hub', label: 'Attendance',     icon: 'event_available' },
-  { to: '/schedule-hub',   label: 'Schedule',       icon: 'calendar_month' },
-  { to: '/corrections-hub',label: 'Corrections',    icon: 'edit_note' },
-  { to: '/insights-hub',   label: 'Insights',       icon: 'analytics' },
-  { to: '/communications', label: 'Comms Hub',      icon: 'notifications' },
-];
-
-const NAV_MANAGER_MANAGERIAL = [
-  { to: '/',                label: 'Dashboard',      icon: 'grid_view' },
-  { to: '/team',            label: 'My Team',        icon: 'group' },
-  { to: '/attendance-hub',  label: 'Attendance Hub', icon: 'event_available' },
-  { to: '/schedule-hub',    label: 'Schedule Hub',   icon: 'calendar_month' },
-  { to: '/corrections-hub', label: 'Corrections',    icon: 'edit_note' },
-  { to: '/insights-hub',    label: 'Insights',       icon: 'analytics' },
-  { to: '/settings',        label: 'Team Policies',  icon: 'policy' },
-  { to: '/communications',  label: 'Comms Hub',      icon: 'notifications' },
-];
-
-const NAV_MANAGER_PERSONAL = [
-  { to: '/',               label: 'Dashboard',      icon: 'grid_view' },
-  { to: '/my-profile',     label: 'My Profile',     icon: 'person' },
-  { to: '/attendance-hub', label: 'Attendance',     icon: 'event_available' },
-  { to: '/schedule-hub',   label: 'Schedule',       icon: 'calendar_month' },
+  { to: '/team',           label: 'My Team',        icon: 'group' },
+  { to: '/attendance-hub', label: 'Attendance Hub', icon: 'event_available' },
+  { to: '/schedule-hub',   label: 'Schedule Hub',   icon: 'calendar_month' },
   { to: '/corrections-hub',label: 'Corrections',    icon: 'edit_note' },
   { to: '/insights-hub',   label: 'Insights',       icon: 'analytics' },
   { to: '/communications', label: 'Comms Hub',      icon: 'notifications' },
@@ -89,49 +64,47 @@ const NAV_EMPLOYEE = [
   { to: '/communications', label: 'Comms Hub',      icon: 'notifications' },
 ];
 
-function getNavItems(role, portalMode) {
+function getNavItems(role) {
   switch (role) {
     case 'SUPER_ADMIN': return NAV_SUPER_ADMIN;
-    case 'HR_MANAGER':  return portalMode === 'managerial' ? NAV_HR_MANAGERIAL : NAV_HR_PERSONAL;
-    case 'MANAGER':     return portalMode === 'managerial' ? NAV_MANAGER_MANAGERIAL : NAV_MANAGER_PERSONAL;
+    case 'HR_MANAGER':  return NAV_ADMIN;
+    case 'MANAGER':     return NAV_MANAGER;
     default:            return NAV_EMPLOYEE;
   }
 }
 
-// Portal toggle: label + icon for the *destination* portal (what you'll switch TO)
-function getPortalToggleConfig(role, portalMode) {
-  if (portalMode === 'managerial') {
-    return { label: 'Personal Portal', icon: 'person' };
+// Human-friendly role labels for sidebar tagline
+function getRoleLabel(role) {
+  switch (role) {
+    case 'SUPER_ADMIN': return 'System Admin';
+    case 'HR_MANAGER':  return 'HR Manager';
+    case 'MANAGER':     return 'Team Manager';
+    default:            return 'Employee';
   }
-  return role === 'HR_MANAGER'
-    ? { label: 'HR Management', icon: 'admin_panel_settings' }
-    : { label: 'Team Management', icon: 'group' };
-}
-
-// Sidebar brand tagline text
-function getSidebarTagline(role, portalMode) {
-  if (role === 'SUPER_ADMIN') return 'System Admin';
-  if (role === 'HR_MANAGER')  return portalMode === 'managerial' ? 'HR Management' : 'Personal View';
-  if (role === 'MANAGER')     return portalMode === 'managerial' ? 'Team Management' : 'Personal View';
-  return 'Vigilant Glass';
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AppLayout() {
-  const {
-    user, logout,
-    isAdmin, isSuperAdmin,
-    hasDualPortal, portalMode, togglePortalMode,
-  } = useAuth();
+  const { user, logout, isAdmin, isSuperAdmin } = useAuth();
   const { toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
   const role       = user?.role || 'EMPLOYEE';
-  const navItems   = useMemo(() => getNavItems(role, portalMode), [role, portalMode]);
-  const toggleCfg  = useMemo(() => getPortalToggleConfig(role, portalMode), [role, portalMode]);
-  const tagline    = useMemo(() => getSidebarTagline(role, portalMode), [role, portalMode]);
+  const navItems   = useMemo(() => getNavItems(role), [role]);
+  const tagline    = useMemo(() => getRoleLabel(role), [role]);
+
+  // Collapsible sidebar
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return sessionStorage.getItem('eraots_sidebar_collapsed') === 'true';
+  });
+
+  const toggleSidebar = () => {
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    sessionStorage.setItem('eraots_sidebar_collapsed', String(next));
+  };
 
   // Global search
   const [searchQuery, setSearchQuery]         = useState('');
@@ -215,29 +188,22 @@ export default function AppLayout() {
   const currentPage = navItems.find(i => i.to === location.pathname)?.label || 'Dashboard';
 
   return (
-    <div className="app-container">
+    <div className="app-container" style={{ '--sidebar-width': sidebarCollapsed ? '72px' : '288px' }}>
       <div className="app-ambient" aria-hidden="true" />
 
       {/* ── Sidebar ─────────────────────────────────────────── */}
-      <aside className="app-sidebar">
+      <aside className={`app-sidebar ${sidebarCollapsed ? 'app-sidebar--collapsed' : ''}`}>
 
         {/* Brand */}
         <div className="sidebar-brand">
           <BrandLogo variant="sidebar" />
-          <div className="sidebar-brand-text">
-            <span className="sidebar-brand-name">ERAOTS</span>
-            <span className="sidebar-brand-tagline">{tagline}</span>
-          </div>
+          {!sidebarCollapsed && (
+            <div className="sidebar-brand-text">
+              <span className="sidebar-brand-name">ERAOTS</span>
+              <span className="sidebar-brand-tagline">{tagline}</span>
+            </div>
+          )}
         </div>
-
-        {/* Portal mode badge — HR / Manager only */}
-        {hasDualPortal && (
-          <div className={`portal-badge ${
-            portalMode === 'managerial' ? 'portal-badge--managerial' : 'portal-badge--personal'
-          }`}>
-            {portalMode === 'managerial' ? 'Managerial' : 'Personal'}
-          </div>
-        )}
 
         {/* Navigation */}
         <nav className="sidebar-nav">
@@ -249,6 +215,7 @@ export default function AppLayout() {
               className={({ isActive }) =>
                 `sidebar-nav-item${isActive ? ' sidebar-nav-item--active' : ''}`
               }
+              title={sidebarCollapsed ? item.label : undefined}
             >
               <span
                 className="material-symbols-outlined sidebar-nav-icon"
@@ -256,26 +223,22 @@ export default function AppLayout() {
               >
                 {item.icon}
               </span>
-              <span className="sidebar-nav-label">{item.label}</span>
+              {!sidebarCollapsed && <span className="sidebar-nav-label">{item.label}</span>}
             </NavLink>
           ))}
         </nav>
 
-        {/* Portal toggle — HR Manager and Dept Manager only */}
-        {hasDualPortal && (
-          <div className="sidebar-portal-section">
-            <button className="portal-toggle-btn" onClick={togglePortalMode}>
-              <span className="material-symbols-outlined">{toggleCfg.icon}</span>
-              {toggleCfg.label}
-            </button>
-          </div>
-        )}
-
         {/* Sidebar footer */}
         <div className="sidebar-footer">
+          <button className="sidebar-footer-link" onClick={toggleSidebar} title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+            <span className="material-symbols-outlined" style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }}>
+              chevron_left
+            </span>
+            {!sidebarCollapsed && <span>Collapse</span>}
+          </button>
           <button className="sidebar-footer-link" onClick={handleLogout}>
             <span className="material-symbols-outlined">logout</span>
-            <span>Logout</span>
+            {!sidebarCollapsed && <span>Logout</span>}
           </button>
         </div>
       </aside>

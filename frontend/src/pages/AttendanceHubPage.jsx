@@ -47,19 +47,6 @@ export default function AttendanceHubPage() {
 
   return (
     <div className="hub-shell">
-      <header className="hub-shell-header">
-        <div>
-          <span className="hub-shell-chip">FR4 ATTENDANCE REPORTING</span>
-          <h1 className="hub-shell-title">Attendance Hub</h1>
-          <p className="hub-shell-subtitle">
-            {isEmployee
-              ? 'Your attendance operations in one focused workspace'
-              : 'Role-aware attendance operations with shared workflow design'}
-          </p>
-        </div>
-        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', opacity: 0.35 }}>event_available</span>
-      </header>
-
       {tabs.length > 1 && (
         <section className="hub-tabs" aria-label="Attendance views">
           {tabs.map((tab) => (
@@ -75,11 +62,6 @@ export default function AttendanceHubPage() {
           ))}
         </section>
       )}
-
-      <section className="hub-context-card">
-        <h2>{currentTab.label}</h2>
-        <p>{currentTab.subtitle}</p>
-      </section>
 
       <section className="hub-content">{currentTab.render()}</section>
     </div>

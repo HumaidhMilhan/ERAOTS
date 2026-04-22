@@ -47,20 +47,6 @@ export default function ScheduleHubPage() {
 
   return (
     <div className="hub-shell">
-      <header className="hub-shell-header">
-        <div>
-          <span className="hub-shell-chip">FR8 LEAVE &amp; SCHEDULE MANAGEMENT</span>
-          <h1 className="hub-shell-title">Schedule Hub</h1>
-          <p className="hub-shell-subtitle">
-            {isEmployee
-              ? 'Plan your schedule and leave lifecycle in one place'
-              : 'Unified leave operations for personal, team, and organization views'}
-          </p>
-        </div>
-        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', opacity: 0.35 }}>calendar_month</span>
-      </header>
-
-
       {tabs.length > 1 && (
         <section className="hub-tabs" aria-label="Schedule views">
           {tabs.map((tab) => (
@@ -76,11 +62,6 @@ export default function ScheduleHubPage() {
           ))}
         </section>
       )}
-
-      <section className="hub-context-card">
-        <h2>{currentTab.label}</h2>
-        <p>{currentTab.subtitle}</p>
-      </section>
 
       <section className="hub-content">{currentTab.render()}</section>
     </div>

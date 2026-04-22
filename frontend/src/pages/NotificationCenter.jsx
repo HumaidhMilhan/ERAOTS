@@ -51,17 +51,14 @@ export default function NotificationCenter() {
     setLoading(true);
     try {
       setPageError('');
-      // Mock converting these to actual query params depending on backend support
-      // Fallback is we do some client side filtering until the backend route is deeply wired
       const isReadParam = status === 'ALL' ? undefined : status === 'READ';
-      
+
       const res = await notificationsAPI.list({
         limit: LIMIT,
         offset: (page - 1) * LIMIT,
         is_read: isReadParam
       });
-      
-      // Client-side mapping & rough filter for mock missing backend filtering rules
+
       let data = res.data.items || [];
       if (priority !== 'ALL') {
         data = data.filter(d => d.priority === priority);
@@ -84,7 +81,7 @@ export default function NotificationCenter() {
 
   useEffect(() => {
     fetchItems();
-  }, [page]); // usually you'd trigger on filter apply, not instantly unless UX desires
+  }, [page]);
 
   const handleApplyFilters = () => {
     setPage(1);
@@ -98,7 +95,6 @@ export default function NotificationCenter() {
     setDateFrom('');
     setDateTo('');
     setPage(1);
-    // setTimeout to allow state to settle
     setTimeout(fetchItems, 50);
   };
 
@@ -117,9 +113,8 @@ export default function NotificationCenter() {
   };
 
   const handleBulkMarkRead = async () => {
-    // If backend supports bulk ID read, call it. Otherwise markAllRead is a good fallback for demo.
     try {
-      await notificationsAPI.markAllRead(); // marks everything unread as read (simplification)
+      await notificationsAPI.markAllRead();
       fetchItems();
       setSelectedIds(new Set());
     } catch (error) {
@@ -144,75 +139,77 @@ export default function NotificationCenter() {
   };
 
   return (
-    <div className="page-wrapper" style={{ display: 'flex', gap: '24px', padding: '24px' }}>
-      {/* LEFT SIDEBAR (Filters) */}
-      <div className="glass-card" style={{ width: '280px', padding: '24px', flexShrink: 0, height: 'fit-content' }}>
-        <h3 style={{ marginBottom: '20px' }}>Filters</h3>
-        
-        <div style={{ marginBottom: '20px' }}>
-          <strong>Status</strong>
-          <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div className="nc-layout">
+      {/* Filter Panel */}
+      <aside className="nc-filter-panel">
+        <h3 className="nc-filter-title">Filters</h3>
+
+        {/* Status */}
+        <div className="nc-filter-section">
+          <h4 className="nc-filter-section-title">Status</h4>
+          <div className="nc-filter-options">
             {['ALL', 'UNREAD', 'READ'].map(val => (
-              <label key={val} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input type="radio" name="status" checked={status === val} onChange={() => setStatus(val)} />
+              <label key={val} className="nc-radio">
+                <input type="radio" name="nc-status" checked={status === val} onChange={() => setStatus(val)} />
                 {val.charAt(0) + val.slice(1).toLowerCase()}
               </label>
             ))}
           </div>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <strong>Priority</strong>
-          <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {/* Priority */}
+        <div className="nc-filter-section">
+          <h4 className="nc-filter-section-title">Priority</h4>
+          <div className="nc-filter-options">
             {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(val => (
-              <label key={val} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input type="radio" name="priority" checked={priority === val} onChange={() => setPriority(val)} />
+              <label key={val} className="nc-radio">
+                <input type="radio" name="nc-priority" checked={priority === val} onChange={() => setPriority(val)} />
                 {val.charAt(0) + val.slice(1).toLowerCase()}
               </label>
             ))}
           </div>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <strong>Alert Type</strong>
-          <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto' }}>
+        {/* Alert Type */}
+        <div className="nc-filter-section">
+          <h4 className="nc-filter-section-title">Alert Type</h4>
+          <div className="nc-filter-options nc-filter-options--scroll">
             {ALL_TYPES.map(type => (
-              <label key={type} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label key={type} className="nc-checkbox">
                 <input type="checkbox" checked={types.includes(type)} onChange={() => handleTypeCheck(type)} />
-                {type.replace('_', ' ')}
+                {type.replace(/_/g, ' ')}
               </label>
             ))}
           </div>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <strong>Date Range</strong>
-          <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <input type="date" className="filter-input" placeholder="From" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-            <input type="date" className="filter-input" placeholder="To" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        {/* Date Range */}
+        <div className="nc-filter-section">
+          <h4 className="nc-filter-section-title">Date Range</h4>
+          <div className="nc-filter-options">
+            <input type="date" className="nc-filter-date" placeholder="From" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+            <input type="date" className="nc-filter-date" placeholder="To" value={dateTo} onChange={e => setDateTo(e.target.value)} />
           </div>
         </div>
 
-        <button className="btn-primary" style={{ width: '100%', marginBottom: '10px' }} onClick={handleApplyFilters}>Apply Filters</button>
-        <button className="btn-secondary" style={{ width: '100%' }} onClick={handleClearFilters}>Clear Filters</button>
-      </div>
+        {/* Actions */}
+        <div className="nc-filter-actions">
+          <button className="nc-filter-btn-primary" onClick={handleApplyFilters}>Apply Filters</button>
+          <button className="nc-filter-btn-secondary" onClick={handleClearFilters}>Clear Filters</button>
+        </div>
+      </aside>
 
-      {/* MAIN CONTENT */}
-      <div style={{ flex: 1 }}>
+      {/* Main Content */}
+      <div className="nc-main">
         {pageError && <ErrorStateStandard message={pageError} onRetry={fetchItems} />}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2>Notifications <span style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>({totalCount})</span></h2>
-          
+        <div className="nc-header">
+          <h2>Notifications <span className="nc-header-count">({totalCount})</span></h2>
+
           {selectedIds.size > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--primary)', color: 'white', padding: '8px 16px', borderRadius: '8px' }}>
+            <div className="nc-bulk-bar">
               <span>{selectedIds.size} selected</span>
-              <button 
-                onClick={handleBulkMarkRead} 
-                style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer' }}
-              >
-                Mark as read
-              </button>
+              <button className="nc-bulk-btn" onClick={handleBulkMarkRead}>Mark as read</button>
             </div>
           )}
         </div>
@@ -226,55 +223,47 @@ export default function NotificationCenter() {
             message="No notifications match the current filters."
           />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ padding: '0 16px', display: 'flex', gap: '16px' }}>
-               <input type="checkbox" onChange={handleSelectAll} checked={notifications.length > 0 && selectedIds.size === notifications.length} /> Select All
-            </div>
+          <div className="nc-list">
+            <label className="nc-select-all nc-checkbox">
+              <input type="checkbox" onChange={handleSelectAll} checked={notifications.length > 0 && selectedIds.size === notifications.length} />
+              Select All
+            </label>
+
             {notifications.map(notif => {
               const isUnread = !notif.read_at;
               const color = PRIORITY_COLORS[notif.priority];
               return (
-                <div 
-                  key={notif.log_id} 
-                  className={`glass-card ${isUnread ? 'unread-bg' : ''}`}
-                  style={{ 
-                    display: 'flex', gap: '16px', padding: '16px', 
-                    borderLeft: `4px solid ${color}`,
-                    alignItems: 'center',
-                    background: isUnread ? 'rgba(255,255,255,0.03)' : 'var(--bg-card)'
-                  }}
-                  onClick={() => {
-                    if (isUnread) handleMarkRead(notif.log_id);
-                  }}
+                <div
+                  key={notif.log_id}
+                  className={`nc-item ${isUnread ? 'nc-item--unread' : ''}`}
+                  style={isUnread ? { borderLeftColor: color } : undefined}
+                  onClick={() => { if (isUnread) handleMarkRead(notif.log_id); }}
                 >
-                  <input 
-                    type="checkbox" 
-                    checked={selectedIds.has(notif.log_id)} 
-                    onChange={() => handleSelect(notif.log_id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  
-                  <div style={{ color }}>
+                  <label className="nc-checkbox" onClick={e => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(notif.log_id)}
+                      onChange={() => handleSelect(notif.log_id)}
+                    />
+                  </label>
+
+                  <div className="nc-item-icon" style={{ color }}>
                     <span className="material-symbols-outlined">{TYPE_ICONS[notif.triggered_by] || TYPE_ICONS.DEFAULT}</span>
                   </div>
 
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <div style={{ fontWeight: isUnread ? 700 : 500 }}>
+                  <div className="nc-item-body">
+                    <div className="nc-item-top">
+                      <div className={isUnread ? 'nc-item-title nc-item-title--bold' : 'nc-item-title'}>
                         {notif.title}
-                        <span style={{ marginLeft: '12px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                          {notif.priority}
-                        </span>
+                        <span className="nc-priority-badge">{notif.priority}</span>
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      <div className="nc-item-time">
                         {new Date(notif.sent_at).toLocaleString()}
                       </div>
                     </div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
-                      {notif.body}
-                    </div>
-                    <div style={{ marginTop: '8px', display: 'flex', gap: '8px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                    <div className="nc-item-text">{notif.body}</div>
+                    <div className="nc-item-channel">
+                      <span className="material-symbols-outlined">
                         {notif.channel === 'in_app' ? 'notifications' : notif.channel === 'email' ? 'mail' : 'chat'}
                       </span>
                       Sent via {notif.channel}
@@ -284,11 +273,11 @@ export default function NotificationCenter() {
               );
             })}
 
-            {/* Pagination Controls */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '20px' }}>
-              <button className="btn-secondary" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</button>
-              <span style={{ display: 'flex', alignItems: 'center' }}>Page {page}</span>
-              <button className="btn-secondary" disabled={notifications.length < LIMIT} onClick={() => setPage(p => p + 1)}>Next</button>
+            {/* Pagination */}
+            <div className="nc-pagination">
+              <button className="nc-filter-btn-secondary" style={{ width: 'auto', padding: '0.4rem 1rem' }} disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</button>
+              <span>Page {page}</span>
+              <button className="nc-filter-btn-secondary" style={{ width: 'auto', padding: '0.4rem 1rem' }} disabled={notifications.length < LIMIT} onClick={() => setPage(p => p + 1)}>Next</button>
             </div>
           </div>
         )}

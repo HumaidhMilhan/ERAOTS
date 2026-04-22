@@ -58,17 +58,6 @@ export default function CommunicationsHubPage() {
 
   return (
     <div className="hub-shell">
-      <header className="hub-shell-header">
-        <div>
-          <span className="hub-shell-chip">FR6 NOTIFICATION &amp; ALERT ENGINE</span>
-          <h1 className="hub-shell-title">Communications Hub</h1>
-          <p className="hub-shell-subtitle">
-            Unified notification, announcement, and meeting communication center
-          </p>
-        </div>
-        <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'var(--primary)', opacity: 0.35 }}>notifications</span>
-      </header>
-
       {tabs.length > 1 && (
         <section className="hub-tabs" aria-label="Communications views">
           {tabs.map((tab) => (
@@ -84,11 +73,6 @@ export default function CommunicationsHubPage() {
           ))}
         </section>
       )}
-
-      <section className="hub-context-card">
-        <h2>{currentTab.label}</h2>
-        <p>{currentTab.subtitle}</p>
-      </section>
 
       <section className="hub-content">{currentTab.render()}</section>
     </div>

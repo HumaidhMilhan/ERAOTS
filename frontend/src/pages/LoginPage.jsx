@@ -70,10 +70,6 @@ export default function LoginPage() {
         {/* Brand Header */}
         <div className="login-brand">
           <BrandLogo variant="login" />
-          <div className="login-brand-text">
-            <h1 className="login-brand-name">ERAOTS</h1>
-            <span className="login-brand-tagline">Vigilant Glass</span>
-          </div>
         </div>
 
         {/* Welcome Text */}
@@ -177,8 +173,6 @@ export default function LoginPage() {
       <div className="login-footer">
         <span className="login-footer-dot" />
         <span>ERAOTS v1.0.0</span>
-        <span className="login-footer-separator">•</span>
-        <span>Vigilant Glass Design System</span>
       </div>
     </div>
   );
