@@ -23,7 +23,7 @@ logger = logging.getLogger("eraots")
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(fastapi_app: FastAPI):
     """Application startup and shutdown events."""
     # Startup
     logger.info("=" * 60)
@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
         scheduler = await start_health_monitoring_scheduler()
         if scheduler:
             # Store in app state so we can stop it on shutdown
-            app.state.health_scheduler = scheduler
+            fastapi_app.state.health_scheduler = scheduler
     except Exception as e:
         logger.warning(f"Health monitoring scheduler not available: {e}")   
         
@@ -71,8 +71,8 @@ async def lifespan(app: FastAPI):
         pass
         
     # Stop the health scheduler if it's running
-    if hasattr(app.state, 'health_scheduler') and app.state.health_scheduler:
-        app.state.health_scheduler.shutdown()
+    if hasattr(fastapi_app.state, 'health_scheduler') and fastapi_app.state.health_scheduler:
+        fastapi_app.state.health_scheduler.shutdown()
         logger.info("Health monitoring scheduler stopped")
         
     logger.info("ERAOTS shutting down...")
