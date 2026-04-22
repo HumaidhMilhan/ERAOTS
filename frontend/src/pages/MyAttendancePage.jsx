@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { attendanceAPI } from '../services/api';
 import { useUIFeedback } from '../context/UIFeedbackContext';
-import { useTimezone } from '../context/TimezoneContext';
 import { TableSkeleton, EmptyStateStandard, ErrorStateStandard } from '../components/DataStates';
 
 export default function MyAttendancePage() {
@@ -66,6 +65,22 @@ export default function MyAttendancePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const formatTime = (timeStr) => {
+    if (!timeStr) return '—';
+    return new Date(timeStr).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   const getStatusColor = (status) => {

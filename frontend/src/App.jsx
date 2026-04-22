@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { UIFeedbackProvider } from './context/UIFeedbackContext';
-import { TimezoneProvider } from './context/TimezoneContext';
 import UIFeedbackToasts from './components/UIFeedbackToasts';
 import AppLayout from './layouts/AppLayout';
 import LoginPage from './pages/LoginPage';
@@ -109,9 +108,8 @@ function App() {
     <ThemeProvider>
       <UIFeedbackProvider>
         <AuthProvider>
-          <TimezoneProvider>
-            <BrowserRouter>
-              <Routes>
+          <BrowserRouter>
+            <Routes>
             {/* Public */}
             <Route path="/login" element={<LoginPage />} />
 
@@ -263,8 +261,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <UIFeedbackToasts />
-            </BrowserRouter>
-          </TimezoneProvider>
+          </BrowserRouter>
         </AuthProvider>
       </UIFeedbackProvider>
     </ThemeProvider>
