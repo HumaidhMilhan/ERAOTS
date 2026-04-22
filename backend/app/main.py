@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     # Create database tables
     try:
         # Import all models so SQLAlchemy knows about them
-        import app.models  # noqa: F401
+        from app import models  # noqa: F401
         await create_tables()
         logger.info("Database tables created/verified")
         

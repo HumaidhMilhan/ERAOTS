@@ -116,7 +116,7 @@ async def seed():
 
         await db.commit()
 
-        print("\n✅ Test credentials seeded successfully!")
+        print("\n[OK] Test credentials seeded successfully!")
         print("=" * 55)
         print(f"{'Role':<15} {'Email':<30} {'Password'}")
         print("-" * 55)
