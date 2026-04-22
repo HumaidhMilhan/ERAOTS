@@ -2,7 +2,7 @@
 Authentication API endpoints.
 Handles login, token generation, and user info.
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -16,7 +16,6 @@ from app.core.security import verify_password, create_access_token, hash_passwor
 from app.core.dependencies import get_current_user
 from app.models.employee import UserAccount, Employee, Role, Department
 from app.api.schemas import LoginRequest, TokenResponse, UserInfo
-from app.core.rate_limit import limiter
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -35,9 +34,7 @@ class PasswordChange(BaseModel):
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("5/15minute")
 async def login(
-    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
@@ -179,9 +176,7 @@ async def update_profile(
 
 
 @router.put("/me/password")
-@limiter.limit("5/15minute")
 async def change_password(
-    request: Request,
     data: PasswordChange,
     current_user: UserAccount = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

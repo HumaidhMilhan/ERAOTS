@@ -14,25 +14,22 @@ class Settings(BaseSettings):
     APP_NAME: str = "ERAOTS"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
-    SECRET_KEY: str
-    
-    # Database
-    DATABASE_URL: str
+    SECRET_KEY: str = "dev-secret-key-change-in-production"
+
+    # Database — defaults to SQLite for dev, use PostgreSQL in production
+    DATABASE_URL: str = "sqlite+aiosqlite:///./eraots.db"
+    # For PostgreSQL: DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/eraots
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # JWT
-    JWT_SECRET_KEY: str
+    JWT_SECRET_KEY: str = "dev-jwt-secret-change-this"
     JWT_ALGORITHM: str = "HS256"
-    
-    # Passwords
-    INITIAL_SUPERADMIN_PASSWORD: str
-    INITIAL_HR_PASSWORD: str
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 480  # 8 hours
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 
     # Office
     OFFICE_CAPACITY: int = 100
